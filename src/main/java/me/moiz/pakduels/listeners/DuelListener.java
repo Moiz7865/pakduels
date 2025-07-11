@@ -2,9 +2,17 @@ package me.moiz.pakduels.listeners;
 
 import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.models.Duel;
+import me.moiz.pakduels.models.Kit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 public class DuelListener implements Listener {
@@ -35,6 +43,84 @@ public class DuelListener implements Listener {
         if (duel != null) {
             // Player quit during duel - opponent wins
             plugin.getDuelManager().endDuel(duel, duel.getOpponent(event.getPlayer()));
+        }
+    }
+    
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        Duel duel = plugin.getDuelManager().getDuel(player);
+        
+        if (duel != null && duel.getState() == Duel.DuelState.IN_PROGRESS) {
+            Kit kit = duel.getKit();
+            if (!kit.getRule("block-break")) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+        Duel duel = plugin.getDuelManager().getDuel(player);
+        
+        if (duel != null && duel.getState() == Duel.DuelState.IN_PROGRESS) {
+            Kit kit = duel.getKit();
+            if (!kit.getRule("block-place")) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onHealthRegen(EntityRegainHealthEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        
+        Duel duel = plugin.getDuelManager().getDuel(player);
+        if (duel != null && duel.getState() == Duel.DuelState.IN_PROGRESS) {
+            Kit kit = duel.getKit();
+            if (!kit.getRule("natural-health-regen") && event.getRegainReason() == EntityRegainHealthEvent.RegainReason.SATIATED) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onFoodLevelChange(FoodLevelChangeEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        
+        Duel duel = plugin.getDuelManager().getDuel(player);
+        if (duel != null && duel.getState() == Duel.DuelState.IN_PROGRESS) {
+            Kit kit = duel.getKit();
+            if (!kit.getRule("hunger-loss")) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onItemDrop(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        Duel duel = plugin.getDuelManager().getDuel(player);
+        
+        if (duel != null && duel.getState() == Duel.DuelState.IN_PROGRESS) {
+            Kit kit = duel.getKit();
+            if (!kit.getRule("item-drop")) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onItemPickup(PlayerPickupItemEvent event) {
+        Player player = event.getPlayer();
+        Duel duel = plugin.getDuelManager().getDuel(player);
+        
+        if (duel != null && duel.getState() == Duel.DuelState.IN_PROGRESS) {
+            Kit kit = duel.getKit();
+            if (!kit.getRule("item-pickup")) {
+                event.setCancelled(true);
+            }
         }
     }
 }

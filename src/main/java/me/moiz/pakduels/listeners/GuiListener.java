@@ -3,6 +3,7 @@ package me.moiz.pakduels.listeners;
 import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.guis.ArenaEditorGui;
 import me.moiz.pakduels.guis.ArenaListGui;
+import me.moiz.pakduels.guis.KitEditorGui;
 import me.moiz.pakduels.models.Arena;
 import me.moiz.pakduels.utils.MessageUtils;
 import org.bukkit.entity.Player;
@@ -12,6 +13,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
+
+import java.util.List;
 
 public class GuiListener implements Listener {
     private final PakDuelsPlugin plugin;
@@ -29,19 +32,43 @@ public class GuiListener implements Listener {
         
         if (title.equals("Arena Manager")) {
             event.setCancelled(true);
-            
-            // Find the ArenaListGui (this is a simplified approach)
-            ArenaListGui gui = new ArenaListGui(plugin, player);
-            if (inventory.equals(gui.getInventory())) {
-                gui.handleClick(event.getSlot());
-            }
+            handleArenaListClick(player, event.getSlot());
         } else if (title.startsWith("Arena Editor: ")) {
             event.setCancelled(true);
-            
             ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-            if (gui != null && inventory.equals(gui.getInventory())) {
+            if (gui != null) {
                 gui.handleClick(event.getSlot());
             }
+        } else if (title.startsWith("Kit Editor: ")) {
+            event.setCancelled(true);
+            KitEditorGui gui = plugin.getGuiManager().getKitEditorGui(player);
+            if (gui != null) {
+                gui.handleClick(event.getSlot());
+            }
+        }
+    }
+    
+    private void handleArenaListClick(Player player, int slot) {
+        if (slot == 49) {
+            player.closeInventory();
+            return;
+        }
+        
+        // Calculate arena index based on slot position
+        int row = slot / 9;
+        int col = slot % 9;
+        
+        if (row < 1 || row > 4 || col < 1 || col > 7) {
+            return; // Invalid slot
+        }
+        
+        int arenaIndex = (row - 1) * 7 + (col - 1);
+        List<Arena> arenas = plugin.getArenaManager().getAllArenas().stream().toList();
+        
+        if (arenaIndex >= 0 && arenaIndex < arenas.size()) {
+            Arena arena = arenas.get(arenaIndex);
+            player.closeInventory();
+            plugin.getGuiManager().openArenaEditorGUI(player, arena);
         }
     }
     
@@ -76,6 +103,7 @@ public class GuiListener implements Listener {
                 }
                 
                 gui.setEditMode(ArenaEditorGui.EditMode.NONE);
+                plugin.getArenaManager().saveArena(arena);
                 gui.refresh();
                 gui.open();
             }

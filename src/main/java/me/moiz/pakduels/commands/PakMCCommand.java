@@ -1,163 +1,112 @@
-package me.moiz.pakduels.commands;
+package me.moiz.pakduels.listeners;
 
 import me.moiz.pakduels.PakDuelsPlugin;
+import me.moiz.pakduels.guis.ArenaEditorGui;
+import me.moiz.pakduels.guis.ArenaListGui;
+import me.moiz.pakduels.guis.KitEditorGui;
 import me.moiz.pakduels.models.Arena;
-import me.moiz.pakduels.models.Kit;
 import me.moiz.pakduels.utils.MessageUtils;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class PakMCCommand implements CommandExecutor, TabCompleter {
+public class GuiListener implements Listener {
     private final PakDuelsPlugin plugin;
     
-    public PakMCCommand(PakDuelsPlugin plugin) {
+    public GuiListener(PakDuelsPlugin plugin) {
         this.plugin = plugin;
     }
     
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) {
-            MessageUtils.sendMessage(sender, "&cThis command can only be used by players!");
-            return true;
-        }
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
         
-        if (args.length == 0) {
-            MessageUtils.sendMessage(player, "&cUsage: /pakmc <subcommand>");
-            return true;
-        }
+        Inventory inventory = event.getInventory();
+        String title = event.getView().getTitle();
         
-        String subCommand = args[0].toLowerCase();
-        
-        switch (subCommand) {
-            case "create":
-                return handleCreateCommand(player, args);
-            case "arena":
-                return handleArenaCommand(player, args);
-            default:
-                MessageUtils.sendMessage(player, "&cUnknown subcommand: " + subCommand);
-                return true;
-        }
-    }
-    
-    private boolean handleCreateCommand(Player player, String[] args) {
-        if (!player.hasPermission("pakmc.kit.create")) {
-            MessageUtils.sendMessage(player, "&cYou don't have permission to create kits!");
-            return true;
-        }
-        
-        if (args.length != 2) {
-            MessageUtils.sendMessage(player, "&cUsage: /pakmc create <kitname>");
-            return true;
-        }
-        
-        String kitName = args[1];
-        
-        // Check if kit already exists
-        if (plugin.getKitManager().getKit(kitName) != null) {
-            MessageUtils.sendMessage(player, "&cA kit with that name already exists!");
-            return true;
-        }
-        
-        // Create kit from player's inventory
-        Kit kit = new Kit(kitName, 
-                         player.getInventory().getContents().clone(),
-                         player.getInventory().getArmorContents().clone(),
-                         player.getInventory().getItemInOffHand().clone());
-        
-        plugin.getKitManager().addKit(kit);
-        MessageUtils.sendMessage(player, "&aKit &f" + kitName + " &acreated successfully!");
-        
-        return true;
-    }
-    
-    private boolean handleArenaCommand(Player player, String[] args) {
-        if (args.length < 2) {
-            MessageUtils.sendMessage(player, "&cUsage: /pakmc arena <create|editor>");
-            return true;
-        }
-        
-        String arenaSubCommand = args[1].toLowerCase();
-        
-        switch (arenaSubCommand) {
-            case "create":
-                return handleArenaCreateCommand(player, args);
-            case "editor":
-                return handleArenaEditorCommand(player, args);
-            default:
-                MessageUtils.sendMessage(player, "&cUnknown arena subcommand: " + arenaSubCommand);
-                return true;
-        }
-    }
-    
-    private boolean handleArenaCreateCommand(Player player, String[] args) {
-        if (!player.hasPermission("pakmc.arena.create")) {
-            MessageUtils.sendMessage(player, "&cYou don't have permission to create arenas!");
-            return true;
-        }
-        
-        if (args.length != 3) {
-            MessageUtils.sendMessage(player, "&cUsage: /pakmc arena create <name>");
-            return true;
-        }
-        
-        String arenaName = args[2];
-        
-        // Check if arena already exists
-        if (plugin.getArenaManager().getArena(arenaName) != null) {
-            MessageUtils.sendMessage(player, "&cAn arena with that name already exists!");
-            return true;
-        }
-        
-        // Create arena
-        Arena arena = new Arena(arenaName);
-        plugin.getArenaManager().addArena(arena);
-        MessageUtils.sendMessage(player, "&aArena &f" + arenaName + " &acreated successfully!");
-        MessageUtils.sendMessage(player, "&aUse &f/pakmc arena editor &ato configure it.");
-        
-        return true;
-    }
-    
-    private boolean handleArenaEditorCommand(Player player, String[] args) {
-        if (!player.hasPermission("pakmc.arena.edit")) {
-            MessageUtils.sendMessage(player, "&cYou don't have permission to edit arenas!");
-            return true;
-        }
-        
-        // Open arena list GUI
-        plugin.getGuiManager().openArenaListGUI(player);
-        return true;
-    }
-    
-    @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!(sender instanceof Player)) {
-            return new ArrayList<>();
-        }
-        
-        List<String> completions = new ArrayList<>();
-        
-        if (args.length == 1) {
-            String partial = args[0].toLowerCase();
-            return Arrays.asList("create", "arena").stream()
-                    .filter(cmd -> cmd.startsWith(partial))
-                    .collect(Collectors.toList());
-        } else if (args.length == 2) {
-            if (args[0].equalsIgnoreCase("arena")) {
-                String partial = args[1].toLowerCase();
-                return Arrays.asList("create", "editor").stream()
-                        .filter(cmd -> cmd.startsWith(partial))
-                        .collect(Collectors.toList());
+        if (title.equals("Arena Manager")) {
+            event.setCancelled(true);
+            handleArenaListClick(player, event.getSlot());
+        } else if (title.startsWith("Arena Editor: ")) {
+            event.setCancelled(true);
+            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+            if (gui != null) {
+                gui.handleClick(event.getSlot());
+            }
+        } else if (title.startsWith("Kit Editor: ")) {
+            event.setCancelled(true);
+            KitEditorGui gui = plugin.getGuiManager().getKitEditorGui(player);
+            if (gui != null) {
+                gui.handleClick(event.getSlot());
             }
         }
+    }
+    
+    private void handleArenaListClick(Player player, int slot) {
+        if (slot == 49) {
+            player.closeInventory();
+            return;
+        }
         
-        return completions;
+        // Calculate arena index based on slot position
+        int row = slot / 9;
+        int col = slot % 9;
+        
+        if (row < 1 || row > 4 || col < 1 || col > 7) {
+            return; // Invalid slot
+        }
+        
+        int arenaIndex = (row - 1) * 7 + (col - 1);
+        List<Arena> arenas = plugin.getArenaManager().getAllArenas().stream().toList();
+        
+        if (arenaIndex >= 0 && arenaIndex < arenas.size()) {
+            Arena arena = arenas.get(arenaIndex);
+            player.closeInventory();
+            plugin.getGuiManager().openArenaEditorGUI(player, arena);
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+        
+        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                event.setCancelled(true);
+                
+                Arena arena = gui.getArena();
+                
+                switch (gui.getEditMode()) {
+                    case POSITION_1:
+                        arena.setPosition1(event.getClickedBlock().getLocation());
+                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
+                        break;
+                    case POSITION_2:
+                        arena.setPosition2(event.getClickedBlock().getLocation());
+                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
+                        break;
+                    case SPAWN_1:
+                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
+                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
+                        break;
+                    case SPAWN_2:
+                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
+                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
+                        break;
+                }
+                
+                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
+                plugin.getArenaManager().saveArena(arena);
+                gui.refresh();
+                gui.open();
+            }
+        }
     }
 }

@@ -1,117 +1,84 @@
-package me.moiz.pakduels.models;
+package me.moiz.pakduels.listeners;
 
-import org.bukkit.Location;
+import me.moiz.pakduels.PakDuelsPlugin;
+import me.moiz.pakduels.guis.ArenaEditorGui;
+import me.moiz.pakduels.guis.ArenaListGui;
+import me.moiz.pakduels.models.Arena;
+import me.moiz.pakduels.utils.MessageUtils;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-public class Arena {
-    private final String name;
-    private Location position1;
-    private Location position2;
-    private Location spawnPoint1;
-    private Location spawnPoint2;
-    private List<String> allowedKits;
-    private boolean regenerationEnabled;
-    private boolean inUse;
+public class GuiListener implements Listener {
+    private final PakDuelsPlugin plugin;
     
-    public Arena(String name) {
-        this.name = name;
-        this.allowedKits = new ArrayList<>();
-        this.regenerationEnabled = true;
-        this.inUse = false;
+    public GuiListener(PakDuelsPlugin plugin) {
+        this.plugin = plugin;
     }
     
-    public String getName() {
-        return name;
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        
+        Inventory inventory = event.getInventory();
+        String title = event.getView().getTitle();
+        
+        if (title.equals("Arena Manager")) {
+            event.setCancelled(true);
+            
+            // Find the ArenaListGui (this is a simplified approach)
+            ArenaListGui gui = new ArenaListGui(plugin, player);
+            if (inventory.equals(gui.getInventory())) {
+                gui.handleClick(event.getSlot());
+            }
+        } else if (title.startsWith("Arena Editor: ")) {
+            event.setCancelled(true);
+            
+            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+            if (gui != null && inventory.equals(gui.getInventory())) {
+                gui.handleClick(event.getSlot());
+            }
+        }
     }
     
-    public Location getPosition1() {
-        return position1;
-    }
-    
-    public void setPosition1(Location position1) {
-        this.position1 = position1;
-    }
-    
-    public Location getPosition2() {
-        return position2;
-    }
-    
-    public void setPosition2(Location position2) {
-        this.position2 = position2;
-    }
-    
-    public Location getSpawnPoint1() {
-        return spawnPoint1;
-    }
-    
-    public void setSpawnPoint1(Location spawnPoint1) {
-        this.spawnPoint1 = spawnPoint1;
-    }
-    
-    public Location getSpawnPoint2() {
-        return spawnPoint2;
-    }
-    
-    public void setSpawnPoint2(Location spawnPoint2) {
-        this.spawnPoint2 = spawnPoint2;
-    }
-    
-    public List<String> getAllowedKits() {
-        return allowedKits;
-    }
-    
-    public void setAllowedKits(List<String> allowedKits) {
-        this.allowedKits = allowedKits;
-    }
-    
-    public boolean isRegenerationEnabled() {
-        return regenerationEnabled;
-    }
-    
-    public void setRegenerationEnabled(boolean regenerationEnabled) {
-        this.regenerationEnabled = regenerationEnabled;
-    }
-    
-    public boolean isInUse() {
-        return inUse;
-    }
-    
-    public void setInUse(boolean inUse) {
-        this.inUse = inUse;
-    }
-    
-    public boolean isComplete() {
-        return position1 != null && position2 != null && 
-               spawnPoint1 != null && spawnPoint2 != null;
-    }
-    
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Arena arena = (Arena) o;
-        return Objects.equals(name, arena.name);
-    }
-    
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
-    }
-    
-    @Override
-    public String toString() {
-        return "Arena{" +
-                "name='" + name + '\'' +
-                ", position1=" + position1 +
-                ", position2=" + position2 +
-                ", spawnPoint1=" + spawnPoint1 +
-                ", spawnPoint2=" + spawnPoint2 +
-                ", allowedKits=" + allowedKits +
-                ", regenerationEnabled=" + regenerationEnabled +
-                ", inUse=" + inUse +
-                '}';
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+        
+        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                event.setCancelled(true);
+                
+                Arena arena = gui.getArena();
+                
+                switch (gui.getEditMode()) {
+                    case POSITION_1:
+                        arena.setPosition1(event.getClickedBlock().getLocation());
+                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
+                        break;
+                    case POSITION_2:
+                        arena.setPosition2(event.getClickedBlock().getLocation());
+                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
+                        break;
+                    case SPAWN_1:
+                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
+                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
+                        break;
+                    case SPAWN_2:
+                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
+                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
+                        break;
+                }
+                
+                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
+                gui.refresh();
+                gui.open();
+            }
+        }
     }
 }

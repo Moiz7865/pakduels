@@ -1,282 +1,84 @@
-package me.moiz.pakduels.managers;
+package me.moiz.pakduels.listeners;
 
 import me.moiz.pakduels.PakDuelsPlugin;
+import me.moiz.pakduels.guis.ArenaEditorGui;
+import me.moiz.pakduels.guis.ArenaListGui;
 import me.moiz.pakduels.models.Arena;
-import me.moiz.pakduels.models.Duel;
-import me.moiz.pakduels.models.DuelRequest;
-import me.moiz.pakduels.models.Kit;
 import me.moiz.pakduels.utils.MessageUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
-public class DuelManager {
+public class GuiListener implements Listener {
     private final PakDuelsPlugin plugin;
-    private final Map<UUID, Duel> activeDuels;
-    private final Map<UUID, DuelRequest> pendingRequests;
-    private final Map<UUID, UUID> playerDuelMap; // Player UUID -> Duel UUID
     
-    public DuelManager(PakDuelsPlugin plugin) {
+    public GuiListener(PakDuelsPlugin plugin) {
         this.plugin = plugin;
-        this.activeDuels = new ConcurrentHashMap<>();
-        this.pendingRequests = new ConcurrentHashMap<>();
-        this.playerDuelMap = new ConcurrentHashMap<>();
-        
-        // Start cleanup task for expired requests
-        startCleanupTask();
     }
     
-    private void startCleanupTask() {
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            Iterator<DuelRequest> iterator = pendingRequests.values().iterator();
-            while (iterator.hasNext()) {
-                DuelRequest request = iterator.next();
-                if (request.isExpired()) {
-                    iterator.remove();
-                    MessageUtils.sendMessage(request.getChallenger(), "&cDuel request to " + request.getChallenged().getName() + " expired.");
-                    MessageUtils.sendMessage(request.getChallenged(), "&cDuel request from " + request.getChallenger().getName() + " expired.");
-                }
-            }
-        }, 20L, 20L); // Run every second
-    }
-    
-    public void addDuelRequest(DuelRequest request) {
-        pendingRequests.put(request.getId(), request);
-    }
-    
-    public void removeDuelRequest(UUID requestId) {
-        pendingRequests.remove(requestId);
-    }
-    
-    public DuelRequest getDuelRequest(Player challenger, Player challenged) {
-        return pendingRequests.values().stream()
-                .filter(request -> request.getChallenger().equals(challenger) && request.getChallenged().equals(challenged))
-                .findFirst()
-                .orElse(null);
-    }
-    
-    public boolean startDuel(Player player1, Player player2, Kit kit, int rounds) {
-        // Find available arena
-        Arena arena = plugin.getArenaManager().getAvailableArena();
-        if (arena == null) {
-            MessageUtils.sendMessage(player1, "&cNo available arenas!");
-            MessageUtils.sendMessage(player2, "&cNo available arenas!");
-            return false;
-        }
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
         
-        // Check if kit is allowed in arena
-        if (!arena.getAllowedKits().isEmpty() && !arena.getAllowedKits().contains(kit.getName())) {
-            MessageUtils.sendMessage(player1, "&cThis kit is not allowed in available arenas!");
-            MessageUtils.sendMessage(player2, "&cThis kit is not allowed in available arenas!");
-            return false;
-        }
+        Inventory inventory = event.getInventory();
+        String title = event.getView().getTitle();
         
-        // Create duel
-        Duel duel = new Duel(player1, player2, kit, arena, rounds);
-        activeDuels.put(duel.getId(), duel);
-        playerDuelMap.put(player1.getUniqueId(), duel.getId());
-        playerDuelMap.put(player2.getUniqueId(), duel.getId());
-        
-        // Mark arena as in use
-        arena.setInUse(true);
-        
-        // Save arena schematic if regeneration is enabled
-        if (arena.isRegenerationEnabled()) {
-            plugin.getArenaManager().saveSchematic(arena);
-        }
-        
-        // Setup players
-        setupPlayerForDuel(player1, kit);
-        setupPlayerForDuel(player2, kit);
-        
-        // Teleport players to spawn points
-        player1.teleport(arena.getSpawnPoint1());
-        player2.teleport(arena.getSpawnPoint2());
-        
-        // Start duel
-        duel.setState(Duel.DuelState.STARTING);
-        startDuelCountdown(duel);
-        
-        // Setup scoreboards
-        plugin.getScoreboardManager().setupDuelScoreboard(duel);
-        
-        return true;
-    }
-    
-    private void setupPlayerForDuel(Player player, Kit kit) {
-        // Clear player
-        player.getInventory().clear();
-        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
-        player.setHealth(20.0);
-        player.setFoodLevel(20);
-        player.setSaturation(20.0f);
-        player.setGameMode(GameMode.SURVIVAL);
-        
-        // Give kit items
-        player.getInventory().setContents(kit.getContents());
-        player.getInventory().setArmorContents(kit.getArmorContents());
-        player.getInventory().setItemInOffHand(kit.getOffHand());
-        
-        player.updateInventory();
-    }
-    
-    private void startDuelCountdown(Duel duel) {
-        Player player1 = duel.getPlayer1();
-        Player player2 = duel.getPlayer2();
-        
-        MessageUtils.sendMessage(player1, "&aDuel starting in 3 seconds...");
-        MessageUtils.sendMessage(player2, "&aDuel starting in 3 seconds...");
-        
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            MessageUtils.sendMessage(player1, "&62...");
-            MessageUtils.sendMessage(player2, "&62...");
+        if (title.equals("Arena Manager")) {
+            event.setCancelled(true);
             
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                MessageUtils.sendMessage(player1, "&c1...");
-                MessageUtils.sendMessage(player2, "&c1...");
+            // Find the ArenaListGui (this is a simplified approach)
+            ArenaListGui gui = new ArenaListGui(plugin, player);
+            if (inventory.equals(gui.getInventory())) {
+                gui.handleClick(event.getSlot());
+            }
+        } else if (title.startsWith("Arena Editor: ")) {
+            event.setCancelled(true);
+            
+            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+            if (gui != null && inventory.equals(gui.getInventory())) {
+                gui.handleClick(event.getSlot());
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+        
+        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                event.setCancelled(true);
                 
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    MessageUtils.sendMessage(player1, "&aGO!");
-                    MessageUtils.sendMessage(player2, "&aGO!");
-                    
-                    duel.setState(Duel.DuelState.IN_PROGRESS);
-                    plugin.getScoreboardManager().updateDuelScoreboard(duel);
-                    
-                }, 20L);
-            }, 20L);
-        }, 20L);
-    }
-    
-    public void endRound(Duel duel, Player winner) {
-        if (duel.getState() != Duel.DuelState.IN_PROGRESS) {
-            return;
-        }
-        
-        duel.setState(Duel.DuelState.ROUND_ENDING);
-        duel.incrementScore(winner);
-        
-        Player loser = duel.getOpponent(winner);
-        
-        MessageUtils.sendMessage(winner, "&aYou won round " + duel.getCurrentRound() + "!");
-        MessageUtils.sendMessage(loser, "&cYou lost round " + duel.getCurrentRound() + "!");
-        
-        plugin.getScoreboardManager().updateDuelScoreboard(duel);
-        
-        if (duel.isFinished()) {
-            // Duel is finished
-            Bukkit.getScheduler().runTaskLater(plugin, () -> endDuel(duel, winner), 40L);
-        } else {
-            // Start next round
-            duel.setCurrentRound(duel.getCurrentRound() + 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> startNextRound(duel), 60L);
-        }
-    }
-    
-    private void startNextRound(Duel duel) {
-        if (duel.getState() != Duel.DuelState.ROUND_ENDING) {
-            return;
-        }
-        
-        Player player1 = duel.getPlayer1();
-        Player player2 = duel.getPlayer2();
-        
-        // Reset players
-        setupPlayerForDuel(player1, duel.getKit());
-        setupPlayerForDuel(player2, duel.getKit());
-        
-        // Teleport players back to spawn points
-        player1.teleport(duel.getArena().getSpawnPoint1());
-        player2.teleport(duel.getArena().getSpawnPoint2());
-        
-        // Regenerate arena if needed
-        if (duel.getArena().isRegenerationEnabled()) {
-            plugin.getArenaManager().pasteSchematic(duel.getArena());
-        }
-        
-        MessageUtils.sendMessage(player1, "&aRound " + duel.getCurrentRound() + " starting...");
-        MessageUtils.sendMessage(player2, "&aRound " + duel.getCurrentRound() + " starting...");
-        
-        startDuelCountdown(duel);
-    }
-    
-    public void endDuel(Duel duel, Player winner) {
-        duel.setState(Duel.DuelState.FINISHED);
-        
-        Player loser = duel.getOpponent(winner);
-        
-        MessageUtils.sendMessage(winner, "&aYou won the duel!");
-        MessageUtils.sendMessage(loser, "&cYou lost the duel!");
-        
-        // Broadcast result
-        String message = "&6" + winner.getName() + " &adefeated &6" + loser.getName() + " &ain a duel using &f" + duel.getKit().getName() + " &akit!";
-        Bukkit.getOnlinePlayers().forEach(player -> MessageUtils.sendMessage(player, message));
-        
-        // Cleanup
-        cleanupDuel(duel);
-    }
-    
-    public void endDuel(Duel duel) {
-        duel.setState(Duel.DuelState.FINISHED);
-        
-        MessageUtils.sendMessage(duel.getPlayer1(), "&cDuel ended!");
-        MessageUtils.sendMessage(duel.getPlayer2(), "&cDuel ended!");
-        
-        cleanupDuel(duel);
-    }
-    
-    private void cleanupDuel(Duel duel) {
-        // Remove from maps
-        activeDuels.remove(duel.getId());
-        playerDuelMap.remove(duel.getPlayer1().getUniqueId());
-        playerDuelMap.remove(duel.getPlayer2().getUniqueId());
-        
-        // Mark arena as not in use
-        duel.getArena().setInUse(false);
-        
-        // Remove scoreboards
-        plugin.getScoreboardManager().removeDuelScoreboard(duel);
-        
-        // Reset players (optional - might want to restore their previous state)
-        resetPlayerAfterDuel(duel.getPlayer1());
-        resetPlayerAfterDuel(duel.getPlayer2());
-    }
-    
-    private void resetPlayerAfterDuel(Player player) {
-        player.getInventory().clear();
-        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
-        player.setHealth(20.0);
-        player.setFoodLevel(20);
-        player.setSaturation(20.0f);
-        player.setGameMode(GameMode.SURVIVAL);
-        
-        // Teleport to spawn or previous location
-        player.teleport(player.getWorld().getSpawnLocation());
-    }
-    
-    public boolean isInDuel(Player player) {
-        return playerDuelMap.containsKey(player.getUniqueId());
-    }
-    
-    public Duel getDuel(Player player) {
-        UUID duelId = playerDuelMap.get(player.getUniqueId());
-        return duelId != null ? activeDuels.get(duelId) : null;
-    }
-    
-    public Duel getDuel(UUID duelId) {
-        return activeDuels.get(duelId);
-    }
-    
-    public Collection<Duel> getActiveDuels() {
-        return new ArrayList<>(activeDuels.values());
-    }
-    
-    public void endAllDuels() {
-        for (Duel duel : new ArrayList<>(activeDuels.values())) {
-            endDuel(duel);
+                Arena arena = gui.getArena();
+                
+                switch (gui.getEditMode()) {
+                    case POSITION_1:
+                        arena.setPosition1(event.getClickedBlock().getLocation());
+                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
+                        break;
+                    case POSITION_2:
+                        arena.setPosition2(event.getClickedBlock().getLocation());
+                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
+                        break;
+                    case SPAWN_1:
+                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
+                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
+                        break;
+                    case SPAWN_2:
+                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
+                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
+                        break;
+                }
+                
+                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
+                gui.refresh();
+                gui.open();
+            }
         }
     }
 }

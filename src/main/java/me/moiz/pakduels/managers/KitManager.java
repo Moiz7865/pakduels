@@ -15,56 +15,54 @@ import java.util.concurrent.ConcurrentHashMap;
 public class KitManager {
     private final PakDuelsPlugin plugin;
     private final Map<String, Kit> kits;
-    private final File kitsFile;
-    private YamlConfiguration kitsConfig;
+    private final File kitsFolder;
     
     public KitManager(PakDuelsPlugin plugin) {
         this.plugin = plugin;
         this.kits = new ConcurrentHashMap<>();
-        this.kitsFile = new File(plugin.getDataFolder(), "kits.yml");
+        this.kitsFolder = new File(plugin.getDataFolder(), "kits");
         
-        // Create file if it doesn't exist
-        if (!kitsFile.exists()) {
-            try {
-                kitsFile.getParentFile().mkdirs();
-                kitsFile.createNewFile();
-            } catch (IOException e) {
-                plugin.getLogger().severe("Could not create kits.yml file!");
-                e.printStackTrace();
-            }
+        // Create kits folder if it doesn't exist
+        if (!kitsFolder.exists()) {
+            kitsFolder.mkdirs();
         }
-        
-        this.kitsConfig = YamlConfiguration.loadConfiguration(kitsFile);
     }
     
     public void loadKits() {
         kits.clear();
         
-        if (!kitsConfig.contains("kits")) {
-            plugin.getLogger().info("No kits found in configuration.");
+        File[] kitFiles = kitsFolder.listFiles((dir, name) -> name.endsWith(".yml"));
+        if (kitFiles == null) {
+            plugin.getLogger().info("No kit files found.");
             return;
         }
         
-        ConfigurationSection kitsSection = kitsConfig.getConfigurationSection("kits");
-        if (kitsSection == null) return;
-        
-        for (String kitName : kitsSection.getKeys(false)) {
+        for (File kitFile : kitFiles) {
             try {
-                ConfigurationSection kitSection = kitsSection.getConfigurationSection(kitName);
-                if (kitSection == null) continue;
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(kitFile);
+                String kitName = kitFile.getName().replace(".yml", "");
                 
                 ItemStack[] contents = SerializationUtils.deserializeItemStackArray(
-                        kitSection.getStringList("contents"));
+                        config.getStringList("contents"));
                 ItemStack[] armorContents = SerializationUtils.deserializeItemStackArray(
-                        kitSection.getStringList("armor"));
+                        config.getStringList("armor"));
                 ItemStack offHand = SerializationUtils.deserializeItemStack(
-                        kitSection.getString("offhand"));
+                        config.getString("offhand"));
                 
-                Kit kit = new Kit(kitName, contents, armorContents, offHand);
+                // Load rules
+                Map<String, Boolean> rules = new HashMap<>();
+                ConfigurationSection rulesSection = config.getConfigurationSection("rules");
+                if (rulesSection != null) {
+                    for (String key : rulesSection.getKeys(false)) {
+                        rules.put(key, rulesSection.getBoolean(key));
+                    }
+                }
+                
+                Kit kit = new Kit(kitName, contents, armorContents, offHand, rules);
                 kits.put(kitName.toLowerCase(), kit);
                 
             } catch (Exception e) {
-                plugin.getLogger().warning("Failed to load kit: " + kitName);
+                plugin.getLogger().warning("Failed to load kit: " + kitFile.getName());
                 e.printStackTrace();
             }
         }
@@ -72,43 +70,40 @@ public class KitManager {
         plugin.getLogger().info("Loaded " + kits.size() + " kits.");
     }
     
-    public void saveKits() {
-        kitsConfig.set("kits", null); // Clear existing kits
-        
-        for (Kit kit : kits.values()) {
-            try {
-                String path = "kits." + kit.getName();
-                
-                kitsConfig.set(path + ".contents", 
-                        SerializationUtils.serializeItemStackArray(kit.getContents()));
-                kitsConfig.set(path + ".armor", 
-                        SerializationUtils.serializeItemStackArray(kit.getArmorContents()));
-                kitsConfig.set(path + ".offhand", 
-                        SerializationUtils.serializeItemStack(kit.getOffHand()));
-                
-            } catch (Exception e) {
-                plugin.getLogger().warning("Failed to save kit: " + kit.getName());
-                e.printStackTrace();
-            }
-        }
-        
+    public void saveKit(Kit kit) {
         try {
-            kitsConfig.save(kitsFile);
-            plugin.getLogger().info("Saved " + kits.size() + " kits.");
+            File kitFile = new File(kitsFolder, kit.getName() + ".yml");
+            YamlConfiguration config = new YamlConfiguration();
+            
+            config.set("contents", SerializationUtils.serializeItemStackArray(kit.getContents()));
+            config.set("armor", SerializationUtils.serializeItemStackArray(kit.getArmorContents()));
+            config.set("offhand", SerializationUtils.serializeItemStack(kit.getOffHand()));
+            
+            // Save rules
+            for (Map.Entry<String, Boolean> entry : kit.getRules().entrySet()) {
+                config.set("rules." + entry.getKey(), entry.getValue());
+            }
+            
+            config.save(kitFile);
+            plugin.getLogger().info("Saved kit: " + kit.getName());
+            
         } catch (IOException e) {
-            plugin.getLogger().severe("Could not save kits.yml file!");
+            plugin.getLogger().severe("Could not save kit: " + kit.getName());
             e.printStackTrace();
         }
     }
     
     public void addKit(Kit kit) {
         kits.put(kit.getName().toLowerCase(), kit);
-        saveKits();
+        saveKit(kit);
     }
     
     public void removeKit(String name) {
         kits.remove(name.toLowerCase());
-        saveKits();
+        File kitFile = new File(kitsFolder, name + ".yml");
+        if (kitFile.exists()) {
+            kitFile.delete();
+        }
     }
     
     public Kit getKit(String name) {
