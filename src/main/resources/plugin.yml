@@ -1,0 +1,37 @@
+name: PakDuels
+version: '${project.version}'
+main: me.moiz.pakduels.PakDuelsPlugin
+api-version: '1.21'
+authors: [ Moiz ]
+description: Advanced duels plugin for Minecraft 1.21.4
+website: https://github.com/moiz-pak/pakduels
+depend: [FastAsyncWorldEdit]
+
+commands:
+  duel:
+    description: Challenge another player to a duel
+    usage: /duel <player> <kit> <rounds>
+    permission: pakmc.duel.use
+    permission-message: You don't have permission to use this command.
+  pakmc:
+    description: PakDuels administration commands
+    usage: /pakmc <subcommand>
+    permission: pakmc.admin
+    permission-message: You don't have permission to use this command.
+
+permissions:
+  pakmc.duel.use:
+    description: Allows players to challenge others to duels
+    default: true
+  pakmc.kit.create:
+    description: Allows players to create new kits
+    default: op
+  pakmc.admin:
+    description: Allows access to all PakDuels administration commands
+    default: op
+  pakmc.arena.create:
+    description: Allows players to create new arenas
+    default: op
+  pakmc.arena.edit:
+    description: Allows players to edit arenas
+    default: op

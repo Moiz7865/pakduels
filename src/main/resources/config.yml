@@ -1,0 +1,39 @@
+# PakDuels Configuration
+# Advanced duels plugin for Minecraft 1.21.4
+
+settings:
+  # Time in seconds before a duel request expires
+  duel-request-timeout: 30
+  
+  # Maximum number of concurrent duels allowed
+  max-concurrent-duels: 10
+  
+  # Allow players to spectate ongoing duels
+  allow-spectating: true
+  
+  # Broadcast duel results to all players
+  broadcast-results: true
+
+# Messages (supports hex colors with &#RRGGBB format)
+messages:
+  prefix: "&#FF6B6B[&#4ECDC4PakDuels&#FF6B6B] "
+  
+  duel:
+    request-sent: "&#4ECDC4Duel request sent to &#FFFFFFplayer&#4ECDC4!"
+    request-received: "&#FFE66DYou have been challenged to a duel!"
+    request-expired: "&#FF6B6BDuel request expired."
+    
+    started: "&#4ECDC4Duel started!"
+    round-won: "&#4ECDC4You won round &#FFFFFFnumber&#4ECDC4!"
+    round-lost: "&#FF6B6BYou lost round &#FFFFFFnumber&#FF6B6B!"
+    duel-won: "&#4ECDC4You won the duel!"
+    duel-lost: "&#FF6B6BYou lost the duel!"
+    
+  errors:
+    no-permission: "&#FF6B6BYou don't have permission to do that!"
+    player-not-found: "&#FF6B6BPlayer not found!"
+    already-in-duel: "&#FF6B6BYou are already in a duel!"
+    target-in-duel: "&#FF6B6BThat player is already in a duel!"
+    kit-not-found: "&#FF6B6BKit not found!"
+    arena-not-found: "&#FF6B6BArena not found!"
+    no-available-arenas: "&#FF6B6BNo available arenas!"
