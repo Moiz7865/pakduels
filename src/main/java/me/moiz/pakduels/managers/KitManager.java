@@ -1,128 +1,112 @@
-package me.moiz.pakduels.managers;
+package me.moiz.pakduels.listeners;
 
 import me.moiz.pakduels.PakDuelsPlugin;
-import me.moiz.pakduels.models.Kit;
-import me.moiz.pakduels.utils.SerializationUtils;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
+import me.moiz.pakduels.guis.ArenaEditorGui;
+import me.moiz.pakduels.guis.ArenaListGui;
+import me.moiz.pakduels.guis.KitEditorGui;
+import me.moiz.pakduels.models.Arena;
+import me.moiz.pakduels.utils.MessageUtils;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
-public class KitManager {
+public class GuiListener implements Listener {
     private final PakDuelsPlugin plugin;
-    private final Map<String, Kit> kits;
-    private final File kitsFolder;
     
-    public KitManager(PakDuelsPlugin plugin) {
+    public GuiListener(PakDuelsPlugin plugin) {
         this.plugin = plugin;
-        this.kits = new ConcurrentHashMap<>();
-        this.kitsFolder = new File(plugin.getDataFolder(), "kits");
+    }
+    
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
         
-        // Create kits folder if it doesn't exist
-        if (!kitsFolder.exists()) {
-            kitsFolder.mkdirs();
+        Inventory inventory = event.getInventory();
+        String title = event.getView().getTitle();
+        
+        if (title.equals("Arena Manager")) {
+            event.setCancelled(true);
+            handleArenaListClick(player, event.getSlot());
+        } else if (title.startsWith("Arena Editor: ")) {
+            event.setCancelled(true);
+            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+            if (gui != null) {
+                gui.handleClick(event.getSlot());
+            }
+        } else if (title.startsWith("Kit Editor: ")) {
+            event.setCancelled(true);
+            KitEditorGui gui = plugin.getGuiManager().getKitEditorGui(player);
+            if (gui != null) {
+                gui.handleClick(event.getSlot());
+            }
         }
     }
     
-    public void loadKits() {
-        kits.clear();
-        
-        File[] kitFiles = kitsFolder.listFiles((dir, name) -> name.endsWith(".yml"));
-        if (kitFiles == null) {
-            plugin.getLogger().info("No kit files found.");
+    private void handleArenaListClick(Player player, int slot) {
+        if (slot == 49) {
+            player.closeInventory();
             return;
         }
         
-        for (File kitFile : kitFiles) {
-            try {
-                YamlConfiguration config = YamlConfiguration.loadConfiguration(kitFile);
-                String kitName = kitFile.getName().replace(".yml", "");
-                
-                ItemStack[] contents = SerializationUtils.deserializeItemStackArray(
-                        config.getStringList("contents"));
-                ItemStack[] armorContents = SerializationUtils.deserializeItemStackArray(
-                        config.getStringList("armor"));
-                ItemStack offHand = SerializationUtils.deserializeItemStack(
-                        config.getString("offhand"));
-                
-                // Load rules
-                Map<String, Boolean> rules = new HashMap<>();
-                ConfigurationSection rulesSection = config.getConfigurationSection("rules");
-                if (rulesSection != null) {
-                    for (String key : rulesSection.getKeys(false)) {
-                        rules.put(key, rulesSection.getBoolean(key));
-                    }
-                }
-                
-                Kit kit = new Kit(kitName, contents, armorContents, offHand, rules);
-                kits.put(kitName.toLowerCase(), kit);
-                
-            } catch (Exception e) {
-                plugin.getLogger().warning("Failed to load kit: " + kitFile.getName());
-                e.printStackTrace();
-            }
+        // Calculate arena index based on slot position
+        int row = slot / 9;
+        int col = slot % 9;
+        
+        if (row < 1 || row > 4 || col < 1 || col > 7) {
+            return; // Invalid slot
         }
         
-        plugin.getLogger().info("Loaded " + kits.size() + " kits.");
+        int arenaIndex = (row - 1) * 7 + (col - 1);
+        List<Arena> arenas = plugin.getArenaManager().getAllArenas().stream().toList();
+        
+        if (arenaIndex >= 0 && arenaIndex < arenas.size()) {
+            Arena arena = arenas.get(arenaIndex);
+            player.closeInventory();
+            plugin.getGuiManager().openArenaEditorGUI(player, arena);
+        }
     }
     
-    public void saveKit(Kit kit) {
-        try {
-            File kitFile = new File(kitsFolder, kit.getName() + ".yml");
-            YamlConfiguration config = new YamlConfiguration();
-            
-            config.set("contents", SerializationUtils.serializeItemStackArray(kit.getContents()));
-            config.set("armor", SerializationUtils.serializeItemStackArray(kit.getArmorContents()));
-            config.set("offhand", SerializationUtils.serializeItemStack(kit.getOffHand()));
-            
-            // Save rules
-            for (Map.Entry<String, Boolean> entry : kit.getRules().entrySet()) {
-                config.set("rules." + entry.getKey(), entry.getValue());
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+        
+        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                event.setCancelled(true);
+                
+                Arena arena = gui.getArena();
+                
+                switch (gui.getEditMode()) {
+                    case POSITION_1:
+                        arena.setPosition1(event.getClickedBlock().getLocation());
+                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
+                        break;
+                    case POSITION_2:
+                        arena.setPosition2(event.getClickedBlock().getLocation());
+                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
+                        break;
+                    case SPAWN_1:
+                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
+                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
+                        break;
+                    case SPAWN_2:
+                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
+                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
+                        break;
+                }
+                
+                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
+                plugin.getArenaManager().saveArena(arena);
+                gui.refresh();
+                gui.open();
             }
-            
-            config.save(kitFile);
-            plugin.getLogger().info("Saved kit: " + kit.getName());
-            
-        } catch (IOException e) {
-            plugin.getLogger().severe("Could not save kit: " + kit.getName());
-            e.printStackTrace();
         }
-    }
-    
-    public void addKit(Kit kit) {
-        kits.put(kit.getName().toLowerCase(), kit);
-        saveKit(kit);
-    }
-    
-    public void removeKit(String name) {
-        kits.remove(name.toLowerCase());
-        File kitFile = new File(kitsFolder, name + ".yml");
-        if (kitFile.exists()) {
-            kitFile.delete();
-        }
-    }
-    
-    public Kit getKit(String name) {
-        return kits.get(name.toLowerCase());
-    }
-    
-    public Collection<Kit> getAllKits() {
-        return new ArrayList<>(kits.values());
-    }
-    
-    public Set<String> getKitNames() {
-        return kits.keySet();
-    }
-    
-    public boolean hasKit(String name) {
-        return kits.containsKey(name.toLowerCase());
-    }
-    
-    public int getKitCount() {
-        return kits.size();
     }
 }

@@ -1,54 +1,95 @@
-package me.moiz.pakduels.listeners;
+package me.moiz.pakduels.guis;
 
 import me.moiz.pakduels.PakDuelsPlugin;
-import me.moiz.pakduels.guis.ArenaEditorGui;
-import me.moiz.pakduels.guis.ArenaListGui;
-import me.moiz.pakduels.guis.KitEditorGui;
 import me.moiz.pakduels.models.Arena;
-import me.moiz.pakduels.utils.MessageUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.Arrays;
 import java.util.List;
 
-public class GuiListener implements Listener {
+public class ArenaListGui {
     private final PakDuelsPlugin plugin;
+    private final Player player;
+    private final Inventory inventory;
     
-    public GuiListener(PakDuelsPlugin plugin) {
+    public ArenaListGui(PakDuelsPlugin plugin, Player player) {
         this.plugin = plugin;
+        this.player = player;
+        this.inventory = Bukkit.createInventory(null, 54, "Arena Manager");
+        
+        setupGui();
     }
     
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
+    private void setupGui() {
+        // Fill background
+        ItemStack background = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta backgroundMeta = background.getItemMeta();
+        backgroundMeta.setDisplayName(" ");
+        background.setItemMeta(backgroundMeta);
         
-        Inventory inventory = event.getInventory();
-        String title = event.getView().getTitle();
-        
-        if (title.equals("Arena Manager")) {
-            event.setCancelled(true);
-            handleArenaListClick(player, event.getSlot());
-        } else if (title.startsWith("Arena Editor: ")) {
-            event.setCancelled(true);
-            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-            if (gui != null) {
-                gui.handleClick(event.getSlot());
-            }
-        } else if (title.startsWith("Kit Editor: ")) {
-            event.setCancelled(true);
-            KitEditorGui gui = plugin.getGuiManager().getKitEditorGui(player);
-            if (gui != null) {
-                gui.handleClick(event.getSlot());
-            }
+        for (int i = 0; i < 54; i++) {
+            inventory.setItem(i, background);
         }
+        
+        // Add arenas
+        List<Arena> arenas = plugin.getArenaManager().getAllArenas().stream().toList();
+        int slot = 10; // Start from slot 10 (second row, second column)
+        
+        for (int i = 0; i < arenas.size() && slot < 44; i++) {
+            Arena arena = arenas.get(i);
+            
+            // Skip border slots
+            if (slot % 9 == 0 || slot % 9 == 8) {
+                slot++;
+                if (slot % 9 == 0 || slot % 9 == 8) {
+                    slot++;
+                }
+            }
+            
+            ItemStack arenaItem = new ItemStack(arena.isComplete() ? Material.EMERALD : Material.RED_CONCRETE);
+            ItemMeta arenaMeta = arenaItem.getItemMeta();
+            arenaMeta.setDisplayName("§6§l" + arena.getName());
+            arenaMeta.setLore(Arrays.asList(
+                "§7Status: " + (arena.isComplete() ? "§aComplete" : "§cIncomplete"),
+                "§7Reserved: " + (arena.isReserved() ? "§cYes" : "§aNo"),
+                "§7Regeneration: " + (arena.isRegenerationEnabled() ? "§aEnabled" : "§cDisabled"),
+                "§7Allowed Kits: §f" + (arena.getAllowedKits().isEmpty() ? "All" : String.join(", ", arena.getAllowedKits())),
+                "",
+                "§e§lClick to edit!"
+            ));
+            arenaItem.setItemMeta(arenaMeta);
+            
+            inventory.setItem(slot, arenaItem);
+            slot++;
+        }
+        
+        // Close button
+        ItemStack close = new ItemStack(Material.BARRIER);
+        ItemMeta closeMeta = close.getItemMeta();
+        closeMeta.setDisplayName("§c§lClose");
+        closeMeta.setLore(Arrays.asList(
+            "§7Close this menu",
+            "",
+            "§e§lClick to close!"
+        ));
+        close.setItemMeta(closeMeta);
+        inventory.setItem(49, close);
     }
     
-    private void handleArenaListClick(Player player, int slot) {
+    public void open() {
+        player.openInventory(inventory);
+    }
+    
+    public Inventory getInventory() {
+        return inventory;
+    }
+    
+    public void handleClick(int slot) {
         if (slot == 49) {
             player.closeInventory();
             return;
@@ -69,44 +110,6 @@ public class GuiListener implements Listener {
             Arena arena = arenas.get(arenaIndex);
             player.closeInventory();
             plugin.getGuiManager().openArenaEditorGUI(player, arena);
-        }
-    }
-    
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-        
-        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
-                event.setCancelled(true);
-                
-                Arena arena = gui.getArena();
-                
-                switch (gui.getEditMode()) {
-                    case POSITION_1:
-                        arena.setPosition1(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
-                        break;
-                    case POSITION_2:
-                        arena.setPosition2(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
-                        break;
-                    case SPAWN_1:
-                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
-                        break;
-                    case SPAWN_2:
-                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
-                        break;
-                }
-                
-                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
-                plugin.getArenaManager().saveArena(arena);
-                gui.refresh();
-                gui.open();
-            }
         }
     }
 }

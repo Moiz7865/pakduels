@@ -1,4 +1,4 @@
-package me.moiz.pakduels.listeners;
+package me.moiz.pakduels.managers;
 
 import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.guis.ArenaEditorGui;
@@ -6,108 +6,57 @@ import me.moiz.pakduels.guis.ArenaListGui;
 import me.moiz.pakduels.guis.KitEditorGui;
 import me.moiz.pakduels.models.Arena;
 import me.moiz.pakduels.models.Kit;
-import me.moiz.pakduels.utils.MessageUtils;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public class GuiListener implements Listener {
+public class GuiManager {
     private final PakDuelsPlugin plugin;
+    private final Map<Player, ArenaEditorGui> arenaEditorGuis;
+    private final Map<Player, KitEditorGui> kitEditorGuis;
     
-    public GuiListener(PakDuelsPlugin plugin) {
+    public GuiManager(PakDuelsPlugin plugin) {
         this.plugin = plugin;
+        this.arenaEditorGuis = new HashMap<>();
+        this.kitEditorGuis = new HashMap<>();
     }
     
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        
-        Inventory inventory = event.getInventory();
-        String title = event.getView().getTitle();
-        
-        if (title.equals("Arena Manager")) {
-            event.setCancelled(true);
-            handleArenaListClick(player, event.getSlot());
-        } else if (title.startsWith("Arena Editor: ")) {
-            event.setCancelled(true);
-            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-            if (gui != null) {
-                gui.handleClick(event.getSlot());
-            }
-        } else if (title.startsWith("Kit Editor: ")) {
-            event.setCancelled(true);
-            KitEditorGui gui = plugin.getGuiManager().getKitEditorGui(player);
-            if (gui != null) {
-                gui.handleClick(event.getSlot());
-            }
-        }
+    public void openArenaListGUI(Player player) {
+        ArenaListGui gui = new ArenaListGui(plugin, player);
+        gui.open();
     }
     
-    private void handleArenaListClick(Player player, int slot) {
-        if (slot == 49) {
-            player.closeInventory();
-            return;
-        }
-        
-        // Calculate arena index based on slot position
-        int row = slot / 9;
-        int col = slot % 9;
-        
-        if (row < 1 || row > 4 || col < 1 || col > 7) {
-            return; // Invalid slot
-        }
-        
-        int arenaIndex = (row - 1) * 7 + (col - 1);
-        List<Arena> arenas = plugin.getArenaManager().getAllArenas().stream().toList();
-        
-        if (arenaIndex >= 0 && arenaIndex < arenas.size()) {
-            Arena arena = arenas.get(arenaIndex);
-            player.closeInventory();
-            plugin.getGuiManager().openArenaEditorGUI(player, arena);
-        }
+    public void openArenaEditorGUI(Player player, Arena arena) {
+        ArenaEditorGui gui = new ArenaEditorGui(plugin, player, arena);
+        arenaEditorGuis.put(player, gui);
+        gui.open();
     }
     
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-        
-        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
-                event.setCancelled(true);
-                
-                Arena arena = gui.getArena();
-                
-                switch (gui.getEditMode()) {
-                    case POSITION_1:
-                        arena.setPosition1(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
-                        break;
-                    case POSITION_2:
-                        arena.setPosition2(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
-                        break;
-                    case SPAWN_1:
-                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
-                        break;
-                    case SPAWN_2:
-                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
-                        break;
-                }
-                
-                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
-                plugin.getArenaManager().saveArena(arena);
-                gui.refresh();
-                gui.open();
-            }
-        }
+    public void openKitEditorGUI(Player player, Kit kit) {
+        KitEditorGui gui = new KitEditorGui(plugin, player, kit);
+        kitEditorGuis.put(player, gui);
+        gui.open();
+    }
+    
+    public ArenaEditorGui getArenaEditorGui(Player player) {
+        return arenaEditorGuis.get(player);
+    }
+    
+    public KitEditorGui getKitEditorGui(Player player) {
+        return kitEditorGuis.get(player);
+    }
+    
+    public void removeArenaEditorGui(Player player) {
+        arenaEditorGuis.remove(player);
+    }
+    
+    public void removeKitEditorGui(Player player) {
+        kitEditorGuis.remove(player);
+    }
+    
+    public void cleanup() {
+        arenaEditorGuis.clear();
+        kitEditorGuis.clear();
     }
 }

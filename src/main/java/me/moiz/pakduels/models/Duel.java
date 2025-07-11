@@ -1,84 +1,186 @@
-package me.moiz.pakduels.listeners;
+package me.moiz.pakduels.models;
 
-import me.moiz.pakduels.PakDuelsPlugin;
-import me.moiz.pakduels.guis.ArenaEditorGui;
-import me.moiz.pakduels.guis.ArenaListGui;
-import me.moiz.pakduels.models.Arena;
-import me.moiz.pakduels.utils.MessageUtils;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
-public class GuiListener implements Listener {
-    private final PakDuelsPlugin plugin;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
+public class Duel {
+    private final UUID id;
+    private final Player player1;
+    private final Player player2;
+    private final Kit kit;
+    private final Arena arena;
+    private final int maxRounds;
+    private int currentRound;
+    private int player1Score;
+    private int player2Score;
+    private DuelState state;
+    private final Map<Player, ItemStack[]> savedInventories;
+    private final Map<Player, ItemStack[]> savedArmor;
+    private final Map<Player, ItemStack> savedOffHand;
     
-    public GuiListener(PakDuelsPlugin plugin) {
-        this.plugin = plugin;
+    public enum DuelState {
+        WAITING,
+        STARTING,
+        INVENTORY_COUNTDOWN,
+        IN_PROGRESS,
+        ROUND_ENDING,
+        FINISHED
     }
     
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        
-        Inventory inventory = event.getInventory();
-        String title = event.getView().getTitle();
-        
-        if (title.equals("Arena Manager")) {
-            event.setCancelled(true);
-            
-            // Find the ArenaListGui (this is a simplified approach)
-            ArenaListGui gui = new ArenaListGui(plugin, player);
-            if (inventory.equals(gui.getInventory())) {
-                gui.handleClick(event.getSlot());
-            }
-        } else if (title.startsWith("Arena Editor: ")) {
-            event.setCancelled(true);
-            
-            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-            if (gui != null && inventory.equals(gui.getInventory())) {
-                gui.handleClick(event.getSlot());
-            }
+    public Duel(Player player1, Player player2, Kit kit, Arena arena, int maxRounds) {
+        this.id = UUID.randomUUID();
+        this.player1 = player1;
+        this.player2 = player2;
+        this.kit = kit;
+        this.arena = arena;
+        this.maxRounds = maxRounds;
+        this.currentRound = 1;
+        this.player1Score = 0;
+        this.player2Score = 0;
+        this.state = DuelState.WAITING;
+        this.savedInventories = new HashMap<>();
+        this.savedArmor = new HashMap<>();
+        this.savedOffHand = new HashMap<>();
+    }
+    
+    public UUID getId() {
+        return id;
+    }
+    
+    public Player getPlayer1() {
+        return player1;
+    }
+    
+    public Player getPlayer2() {
+        return player2;
+    }
+    
+    public Kit getKit() {
+        return kit;
+    }
+    
+    public Arena getArena() {
+        return arena;
+    }
+    
+    public int getMaxRounds() {
+        return maxRounds;
+    }
+    
+    public int getCurrentRound() {
+        return currentRound;
+    }
+    
+    public void setCurrentRound(int currentRound) {
+        this.currentRound = currentRound;
+    }
+    
+    public int getPlayer1Score() {
+        return player1Score;
+    }
+    
+    public void setPlayer1Score(int player1Score) {
+        this.player1Score = player1Score;
+    }
+    
+    public int getPlayer2Score() {
+        return player2Score;
+    }
+    
+    public void setPlayer2Score(int player2Score) {
+        this.player2Score = player2Score;
+    }
+    
+    public DuelState getState() {
+        return state;
+    }
+    
+    public void setState(DuelState state) {
+        this.state = state;
+    }
+    
+    public Player getOpponent(Player player) {
+        return player.equals(player1) ? player2 : player1;
+    }
+    
+    public boolean hasPlayer(Player player) {
+        return player.equals(player1) || player.equals(player2);
+    }
+    
+    public void incrementScore(Player winner) {
+        if (winner.equals(player1)) {
+            player1Score++;
+        } else if (winner.equals(player2)) {
+            player2Score++;
         }
     }
     
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-        
-        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
-                event.setCancelled(true);
-                
-                Arena arena = gui.getArena();
-                
-                switch (gui.getEditMode()) {
-                    case POSITION_1:
-                        arena.setPosition1(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
-                        break;
-                    case POSITION_2:
-                        arena.setPosition2(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
-                        break;
-                    case SPAWN_1:
-                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
-                        break;
-                    case SPAWN_2:
-                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
-                        break;
-                }
-                
-                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
-                gui.refresh();
-                gui.open();
-            }
+    public Player getWinner() {
+        if (player1Score > maxRounds / 2) {
+            return player1;
+        } else if (player2Score > maxRounds / 2) {
+            return player2;
         }
+        return null;
+    }
+    
+    public boolean isFinished() {
+        return getWinner() != null;
+    }
+    
+    public void savePlayerInventory(Player player) {
+        savedInventories.put(player, player.getInventory().getContents().clone());
+        savedArmor.put(player, player.getInventory().getArmorContents().clone());
+        savedOffHand.put(player, player.getInventory().getItemInOffHand().clone());
+    }
+    
+    public void restorePlayerInventory(Player player) {
+        ItemStack[] inventory = savedInventories.get(player);
+        ItemStack[] armor = savedArmor.get(player);
+        ItemStack offHand = savedOffHand.get(player);
+        
+        if (inventory != null) {
+            player.getInventory().setContents(inventory);
+        }
+        if (armor != null) {
+            player.getInventory().setArmorContents(armor);
+        }
+        if (offHand != null) {
+            player.getInventory().setItemInOffHand(offHand);
+        }
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Duel duel = (Duel) o;
+        return Objects.equals(id, duel.id);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+    
+    @Override
+    public String toString() {
+        return "Duel{" +
+                "id=" + id +
+                ", player1=" + player1.getName() +
+                ", player2=" + player2.getName() +
+                ", kit=" + kit.getName() +
+                ", arena=" + arena.getName() +
+                ", currentRound=" + currentRound +
+                ", maxRounds=" + maxRounds +
+                ", player1Score=" + player1Score +
+                ", player2Score=" + player2Score +
+                ", state=" + state +
+                '}';
     }
 }

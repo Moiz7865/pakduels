@@ -1,84 +1,132 @@
-package me.moiz.pakduels.listeners;
+package me.moiz.pakduels.managers;
 
 import me.moiz.pakduels.PakDuelsPlugin;
-import me.moiz.pakduels.guis.ArenaEditorGui;
-import me.moiz.pakduels.guis.ArenaListGui;
 import me.moiz.pakduels.models.Arena;
-import me.moiz.pakduels.utils.MessageUtils;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
+import me.moiz.pakduels.utils.SerializationUtils;
+import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 
-public class GuiListener implements Listener {
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class ArenaManager {
     private final PakDuelsPlugin plugin;
+    private final Map<String, Arena> arenas;
+    private final File arenasFolder;
     
-    public GuiListener(PakDuelsPlugin plugin) {
+    public ArenaManager(PakDuelsPlugin plugin) {
         this.plugin = plugin;
-    }
-    
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
+        this.arenas = new ConcurrentHashMap<>();
+        this.arenasFolder = new File(plugin.getDataFolder(), "arenas");
         
-        Inventory inventory = event.getInventory();
-        String title = event.getView().getTitle();
-        
-        if (title.equals("Arena Manager")) {
-            event.setCancelled(true);
-            
-            // Find the ArenaListGui (this is a simplified approach)
-            ArenaListGui gui = new ArenaListGui(plugin, player);
-            if (inventory.equals(gui.getInventory())) {
-                gui.handleClick(event.getSlot());
-            }
-        } else if (title.startsWith("Arena Editor: ")) {
-            event.setCancelled(true);
-            
-            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-            if (gui != null && inventory.equals(gui.getInventory())) {
-                gui.handleClick(event.getSlot());
-            }
+        // Create arenas folder if it doesn't exist
+        if (!arenasFolder.exists()) {
+            arenasFolder.mkdirs();
         }
     }
     
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
+    public void loadArenas() {
+        arenas.clear();
         
-        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
-                event.setCancelled(true);
+        File[] arenaFiles = arenasFolder.listFiles((dir, name) -> name.endsWith(".yml"));
+        if (arenaFiles == null) {
+            plugin.getLogger().info("No arena files found.");
+            return;
+        }
+        
+        for (File arenaFile : arenaFiles) {
+            try {
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(arenaFile);
+                String arenaName = arenaFile.getName().replace(".yml", "");
                 
-                Arena arena = gui.getArena();
+                Location pos1 = SerializationUtils.deserializeLocation(config.getString("position1"));
+                Location pos2 = SerializationUtils.deserializeLocation(config.getString("position2"));
+                Location spawn1 = SerializationUtils.deserializeLocation(config.getString("spawn1"));
+                Location spawn2 = SerializationUtils.deserializeLocation(config.getString("spawn2"));
                 
-                switch (gui.getEditMode()) {
-                    case POSITION_1:
-                        arena.setPosition1(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
-                        break;
-                    case POSITION_2:
-                        arena.setPosition2(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
-                        break;
-                    case SPAWN_1:
-                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
-                        break;
-                    case SPAWN_2:
-                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
-                        break;
-                }
+                Arena arena = new Arena(arenaName, pos1, pos2, spawn1, spawn2);
+                arena.setAllowedKits(config.getStringList("allowed-kits"));
+                arena.setRegenerationEnabled(config.getBoolean("regeneration", false));
                 
-                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
-                gui.refresh();
-                gui.open();
+                arenas.put(arenaName.toLowerCase(), arena);
+                
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to load arena: " + arenaFile.getName());
+                e.printStackTrace();
             }
         }
+        
+        plugin.getLogger().info("Loaded " + arenas.size() + " arenas.");
+    }
+    
+    public void saveArena(Arena arena) {
+        try {
+            File arenaFile = new File(arenasFolder, arena.getName() + ".yml");
+            YamlConfiguration config = new YamlConfiguration();
+            
+            config.set("position1", SerializationUtils.serializeLocation(arena.getPosition1()));
+            config.set("position2", SerializationUtils.serializeLocation(arena.getPosition2()));
+            config.set("spawn1", SerializationUtils.serializeLocation(arena.getSpawnPoint1()));
+            config.set("spawn2", SerializationUtils.serializeLocation(arena.getSpawnPoint2()));
+            config.set("allowed-kits", arena.getAllowedKits());
+            config.set("regeneration", arena.isRegenerationEnabled());
+            
+            config.save(arenaFile);
+            plugin.getLogger().info("Saved arena: " + arena.getName());
+            
+        } catch (IOException e) {
+            plugin.getLogger().severe("Could not save arena: " + arena.getName());
+            e.printStackTrace();
+        }
+    }
+    
+    public void saveArenas() {
+        for (Arena arena : arenas.values()) {
+            saveArena(arena);
+        }
+    }
+    
+    public void addArena(Arena arena) {
+        arenas.put(arena.getName().toLowerCase(), arena);
+        saveArena(arena);
+    }
+    
+    public void removeArena(String name) {
+        arenas.remove(name.toLowerCase());
+        File arenaFile = new File(arenasFolder, name + ".yml");
+        if (arenaFile.exists()) {
+            arenaFile.delete();
+        }
+    }
+    
+    public Arena getArena(String name) {
+        return arenas.get(name.toLowerCase());
+    }
+    
+    public Collection<Arena> getAllArenas() {
+        return new ArrayList<>(arenas.values());
+    }
+    
+    public Set<String> getArenaNames() {
+        return arenas.keySet();
+    }
+    
+    public boolean hasArena(String name) {
+        return arenas.containsKey(name.toLowerCase());
+    }
+    
+    public Arena getAvailableArena(String kitName) {
+        return arenas.values().stream()
+                .filter(arena -> !arena.isReserved())
+                .filter(arena -> arena.isKitAllowed(kitName))
+                .filter(Arena::isComplete)
+                .findFirst()
+                .orElse(null);
+    }
+    
+    public int getArenaCount() {
+        return arenas.size();
     }
 }
