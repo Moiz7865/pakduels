@@ -7,6 +7,7 @@ import me.moiz.pakduels.listeners.GuiListener;
 import me.moiz.pakduels.managers.*;
 import me.moiz.pakduels.utils.ConfigManager;
 import me.moiz.pakduels.utils.HealthDisplayManager;
+import me.moiz.pakduels.utils.MessageUtils;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class PakDuelsPlugin extends JavaPlugin {
@@ -25,6 +26,10 @@ public class PakDuelsPlugin extends JavaPlugin {
         
         // Initialize managers
         this.configManager = new ConfigManager(this);
+        
+        // Initialize MessageUtils with plugin instance
+        MessageUtils.setPlugin(this);
+        
         this.kitManager = new KitManager(this);
         this.arenaManager = new ArenaManager(this);
         this.duelManager = new DuelManager(this);

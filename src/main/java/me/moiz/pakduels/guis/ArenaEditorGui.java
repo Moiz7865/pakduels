@@ -100,6 +100,18 @@ public class ArenaEditorGui {
         spawn2.setItemMeta(spawn2Meta);
         inventory.setItem(25, spawn2);
         
+        ItemStack allowedKits = new ItemStack(Material.BOOK);
+        ItemMeta allowedKitsMeta = allowedKits.getItemMeta();
+        allowedKitsMeta.setDisplayName("§b§lAllowed Kits");
+        allowedKitsMeta.setLore(Arrays.asList(
+            "§7Manage which kits can use this arena",
+            "§7Current: " + (arena.getAllowedKits().isEmpty() ? "§aAll kits" : "§f" + String.join(", ", arena.getAllowedKits())),
+            "",
+            "§e§lClick to manage!"
+        ));
+        allowedKits.setItemMeta(allowedKitsMeta);
+        inventory.setItem(29, allowedKits);
+        
         // Regeneration toggle
         ItemStack regen = new ItemStack(arena.isRegenerationEnabled() ? Material.LIME_DYE : Material.RED_DYE);
         ItemMeta regenMeta = regen.getItemMeta();
@@ -196,6 +208,9 @@ public class ArenaEditorGui {
                 setEditMode(EditMode.SPAWN_2);
                 player.closeInventory();
                 MessageUtils.sendMessage(player, "&aClick a block to set Spawn Point 2!");
+                break;
+            case 29: // Allowed Kits
+                plugin.getGuiManager().openKitSelectorGUI(player, arena);
                 break;
             case 31: // Regeneration toggle
                 arena.setRegenerationEnabled(!arena.isRegenerationEnabled());
