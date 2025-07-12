@@ -16,6 +16,9 @@ duel:
     # Delay before regenerating arena (in ticks, 20 ticks = 1 second)
     delay: 60
 
+  # Delay between rounds in seconds
+  round-delay: 2
+
 # Spawn location (where players are teleported after duels)
 spawn:
   world: "world"

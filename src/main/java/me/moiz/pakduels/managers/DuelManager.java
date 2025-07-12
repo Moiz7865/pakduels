@@ -103,6 +103,10 @@ public class DuelManager {
         player1.teleport(arena.getSpawnPoint1());
         player2.teleport(arena.getSpawnPoint2());
         
+        // Make players invulnerable during setup
+        player1.setInvulnerable(true);
+        player2.setInvulnerable(true);
+        
         // Apply kit
         applyKit(player1, kit);
         applyKit(player2, kit);
@@ -171,6 +175,10 @@ public class DuelManager {
                     MessageUtils.sendMessage(duel.getPlayer1(), "&a&lGO!");
                     MessageUtils.sendMessage(duel.getPlayer2(), "&a&lGO!");
                     
+                    // Remove invulnerability
+                    duel.getPlayer1().setInvulnerable(false);
+                    duel.getPlayer2().setInvulnerable(false);
+                    
                     duel.getPlayer1().playSound(duel.getPlayer1().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
                     duel.getPlayer2().playSound(duel.getPlayer2().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
                     
@@ -205,13 +213,18 @@ public class DuelManager {
         if (duel.isFinished()) {
             endDuel(duel, duel.getWinner());
         } else {
+            // Make players invulnerable during round transition
+            duel.getPlayer1().setInvulnerable(true);
+            duel.getPlayer2().setInvulnerable(true);
+            
             // Start next round
+            int roundDelay = plugin.getConfigManager().getRoundDelay();
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     startNextRound(duel);
                 }
-            }.runTaskLater(plugin, 60L); // 3 second delay
+            }.runTaskLater(plugin, roundDelay * 20L);
         }
     }
     
@@ -279,8 +292,24 @@ public class DuelManager {
         restorePlayerState(player1);
         restorePlayerState(player2);
         
-        // Teleport to spawn (if configured)
-        // TODO: Implement spawn teleportation
+        // Teleport to spawn
+        teleportToSpawn(player1);
+        teleportToSpawn(player2);
+    }
+    
+    private void teleportToSpawn(Player player) {
+        if (plugin.getConfigManager().hasSpawnSet()) {
+            String worldName = plugin.getConfigManager().getSpawnWorldName();
+            double x = plugin.getConfigManager().getSpawnX();
+            double y = plugin.getConfigManager().getSpawnY();
+            double z = plugin.getConfigManager().getSpawnZ();
+            
+            org.bukkit.World world = Bukkit.getWorld(worldName);
+            if (world != null) {
+                Location spawnLoc = new Location(world, x, y, z);
+                player.teleport(spawnLoc);
+            }
+        }
     }
     
     public void endAllDuels() {

@@ -44,5 +44,43 @@ public class ConfigManager {
     public void reloadConfig() {
         plugin.reloadConfig();
         this.config = plugin.getConfig();
+        loadScoreboardConfig();
+    }
+    
+    // Scoreboard configuration
+    private YamlConfiguration scoreboardConfig;
+    
+    private void loadScoreboardConfig() {
+        File scoreboardFile = new File(plugin.getDataFolder(), "scoreboard.yml");
+        if (!scoreboardFile.exists()) {
+            plugin.saveResource("scoreboard.yml", false);
+        }
+        scoreboardConfig = YamlConfiguration.loadConfiguration(scoreboardFile);
+    }
+    
+    public List<String> getScoreboardLines() {
+        return scoreboardConfig.getStringList("lines");
+    }
+    
+    public String getScoreboardTitle() {
+        return scoreboardConfig.getString("title", "&6&lPakDuels");
+    }
+    
+    public int getRoundDelay() {
+        return config.getInt("duel.round-delay", 2);
+    }
+    
+    public boolean hasSpawnSet() {
+        return config.contains("spawn.world");
+    }
+    
+    public void setSpawn(String world, double x, double y, double z, float yaw, float pitch) {
+        config.set("spawn.world", world);
+        config.set("spawn.x", x);
+        config.set("spawn.y", y);
+        config.set("spawn.z", z);
+        config.set("spawn.yaw", yaw);
+        config.set("spawn.pitch", pitch);
+        plugin.saveConfig();
     }
 }

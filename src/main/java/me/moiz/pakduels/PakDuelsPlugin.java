@@ -1,112 +1,102 @@
-package me.moiz.pakduels.listeners;
+package me.moiz.pakduels;
 
-import me.moiz.pakduels.PakDuelsPlugin;
-import me.moiz.pakduels.guis.ArenaEditorGui;
-import me.moiz.pakduels.guis.ArenaListGui;
-import me.moiz.pakduels.guis.KitEditorGui;
-import me.moiz.pakduels.models.Arena;
-import me.moiz.pakduels.utils.MessageUtils;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
+import me.moiz.pakduels.commands.DuelCommand;
+import me.moiz.pakduels.commands.PakMCCommand;
+import me.moiz.pakduels.listeners.DuelListener;
+import me.moiz.pakduels.listeners.GuiListener;
+import me.moiz.pakduels.managers.*;
+import me.moiz.pakduels.utils.ConfigManager;
+import me.moiz.pakduels.utils.HealthDisplayManager;
+import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.List;
-
-public class GuiListener implements Listener {
-    private final PakDuelsPlugin plugin;
+public class PakDuelsPlugin extends JavaPlugin {
     
-    public GuiListener(PakDuelsPlugin plugin) {
-        this.plugin = plugin;
+    private ConfigManager configManager;
+    private KitManager kitManager;
+    private ArenaManager arenaManager;
+    private DuelManager duelManager;
+    private ScoreboardManager scoreboardManager;
+    private GuiManager guiManager;
+    private HealthDisplayManager healthDisplayManager;
+    
+    @Override
+    public void onEnable() {
+        getLogger().info("PakDuels is starting up...");
+        
+        // Initialize managers
+        this.configManager = new ConfigManager(this);
+        this.kitManager = new KitManager(this);
+        this.arenaManager = new ArenaManager(this);
+        this.duelManager = new DuelManager(this);
+        this.scoreboardManager = new ScoreboardManager(this);
+        this.guiManager = new GuiManager(this);
+        this.healthDisplayManager = new HealthDisplayManager(this);
+        
+        // Load configurations
+        configManager.loadConfigs();
+        
+        // Load data
+        kitManager.loadKits();
+        arenaManager.loadArenas();
+        
+        // Register commands
+        getCommand("duel").setExecutor(new DuelCommand(this));
+        getCommand("pakmc").setExecutor(new PakMCCommand(this));
+        
+        // Register listeners
+        getServer().getPluginManager().registerEvents(new DuelListener(this), this);
+        getServer().getPluginManager().registerEvents(new GuiListener(this), this);
+        
+        getLogger().info("PakDuels has been enabled successfully!");
     }
     
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
+    @Override
+    public void onDisable() {
+        getLogger().info("PakDuels is shutting down...");
         
-        Inventory inventory = event.getInventory();
-        String title = event.getView().getTitle();
-        
-        if (title.equals("Arena Manager")) {
-            event.setCancelled(true);
-            handleArenaListClick(player, event.getSlot());
-        } else if (title.startsWith("Arena Editor: ")) {
-            event.setCancelled(true);
-            ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-            if (gui != null) {
-                gui.handleClick(event.getSlot());
-            }
-        } else if (title.startsWith("Kit Editor: ")) {
-            event.setCancelled(true);
-            KitEditorGui gui = plugin.getGuiManager().getKitEditorGui(player);
-            if (gui != null) {
-                gui.handleClick(event.getSlot());
-            }
+        // Save data
+        if (kitManager != null) {
+            kitManager.saveKits();
         }
+        if (arenaManager != null) {
+            arenaManager.saveArenas();
+        }
+        if (duelManager != null) {
+            duelManager.endAllDuels();
+        }
+        if (guiManager != null) {
+            guiManager.cleanup();
+        }
+        
+        getLogger().info("PakDuels has been disabled successfully!");
     }
     
-    private void handleArenaListClick(Player player, int slot) {
-        if (slot == 49) {
-            player.closeInventory();
-            return;
-        }
-        
-        // Calculate arena index based on slot position
-        int row = slot / 9;
-        int col = slot % 9;
-        
-        if (row < 1 || row > 4 || col < 1 || col > 7) {
-            return; // Invalid slot
-        }
-        
-        int arenaIndex = (row - 1) * 7 + (col - 1);
-        List<Arena> arenas = plugin.getArenaManager().getAllArenas().stream().toList();
-        
-        if (arenaIndex >= 0 && arenaIndex < arenas.size()) {
-            Arena arena = arenas.get(arenaIndex);
-            player.closeInventory();
-            plugin.getGuiManager().openArenaEditorGUI(player, arena);
-        }
+    // Getters for managers
+    public ConfigManager getConfigManager() {
+        return configManager;
     }
     
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
-        
-        if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
-                event.setCancelled(true);
-                
-                Arena arena = gui.getArena();
-                
-                switch (gui.getEditMode()) {
-                    case POSITION_1:
-                        arena.setPosition1(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
-                        break;
-                    case POSITION_2:
-                        arena.setPosition2(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
-                        break;
-                    case SPAWN_1:
-                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
-                        break;
-                    case SPAWN_2:
-                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
-                        break;
-                }
-                
-                gui.setEditMode(ArenaEditorGui.EditMode.NONE);
-                plugin.getArenaManager().saveArena(arena);
-                gui.refresh();
-                gui.open();
-            }
-        }
+    public KitManager getKitManager() {
+        return kitManager;
+    }
+    
+    public ArenaManager getArenaManager() {
+        return arenaManager;
+    }
+    
+    public DuelManager getDuelManager() {
+        return duelManager;
+    }
+    
+    public ScoreboardManager getScoreboardManager() {
+        return scoreboardManager;
+    }
+    
+    public GuiManager getGuiManager() {
+        return guiManager;
+    }
+    
+    public HealthDisplayManager getHealthDisplayManager() {
+        return healthDisplayManager;
     }
 }

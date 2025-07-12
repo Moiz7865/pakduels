@@ -1,22 +1,16 @@
-package me.moiz.pakduels.listeners;
+package me.moiz.pakduels.managers;
 
 import me.moiz.pakduels.PakDuelsPlugin;
-import me.moiz.pakduels.guis.ArenaEditorGui;
-import me.moiz.pakduels.guis.ArenaListGui;
-import me.moiz.pakduels.guis.KitEditorGui;
-import me.moiz.pakduels.models.Arena;
-import me.moiz.pakduels.utils.MessageUtils;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
+import me.moiz.pakduels.models.Kit;
+import me.moiz.pakduels.utils.SerializationUtils;
+import org.bukkit.configuration.file.YamlConfiguration;
 
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class GuiListener implements Listener {
+public class KitManager {
     private final PakDuelsPlugin plugin;
     
     public GuiListener(PakDuelsPlugin plugin) {

@@ -32,6 +32,18 @@ public class DuelListener implements Listener {
             event.getDrops().clear();
             event.setDroppedExp(0);
             
+            // Store death location for respawn
+            Location deathLoc = event.getEntity().getLocation();
+            
+            // Respawn at death location after a short delay
+            new org.bukkit.scheduler.BukkitRunnable() {
+                @Override
+                public void run() {
+                    event.getEntity().spigot().respawn();
+                    event.getEntity().teleport(deathLoc);
+                }
+            }.runTaskLater(plugin, 1L);
+            
             // Winner is the opponent
             plugin.getDuelManager().endRound(duel, duel.getOpponent(event.getEntity()));
         }
@@ -119,6 +131,21 @@ public class DuelListener implements Listener {
         if (duel != null && duel.getState() == Duel.DuelState.IN_PROGRESS) {
             Kit kit = duel.getKit();
             if (!kit.getRule("item-pickup")) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerDamage(org.bukkit.event.entity.EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim) || !(event.getDamager() instanceof Player attacker)) {
+            return;
+        }
+        
+        Duel duel = plugin.getDuelManager().getDuel(victim);
+        if (duel != null && duel.hasPlayer(attacker)) {
+            // Cancel damage during countdown and round delays
+            if (duel.getState() != Duel.DuelState.IN_PROGRESS) {
                 event.setCancelled(true);
             }
         }

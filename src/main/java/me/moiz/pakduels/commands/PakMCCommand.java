@@ -43,6 +43,23 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
                 createKit(player, args[1]);
                 break;
                 
+            case "setspawn":
+                if (!player.hasPermission("pakmc.admin")) {
+                    MessageUtils.sendMessage(player, "&cYou don't have permission to use this command!");
+                    return true;
+                }
+                setSpawn(player);
+                break;
+                
+            case "reload":
+                if (!player.hasPermission("pakmc.admin")) {
+                    MessageUtils.sendMessage(player, "&cYou don't have permission to use this command!");
+                    return true;
+                }
+                reloadConfigs();
+                MessageUtils.sendMessage(player, "&aAll configurations reloaded!");
+                break;
+                
             case "arena":
                 if (args.length < 2) {
                     MessageUtils.sendMessage(player, "&cUsage: /pakmc arena <create|editor> [name]");
@@ -57,15 +74,6 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 handleKitCommand(player, args);
-                break;
-                
-            case "reload":
-                if (!player.hasPermission("pakmc.admin")) {
-                    MessageUtils.sendMessage(player, "&cYou don't have permission to use this command!");
-                    return true;
-                }
-                plugin.getConfigManager().reloadConfig();
-                MessageUtils.sendMessage(player, "&aConfiguration reloaded!");
                 break;
                 
             default:
@@ -168,12 +176,31 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
         plugin.getGuiManager().openKitEditorGUI(player, kit);
     }
     
+    private void setSpawn(Player player) {
+        plugin.getConfigManager().setSpawn(
+            player.getWorld().getName(),
+            player.getLocation().getX(),
+            player.getLocation().getY(),
+            player.getLocation().getZ(),
+            player.getLocation().getYaw(),
+            player.getLocation().getPitch()
+        );
+        MessageUtils.sendMessage(player, "&aSpawn location set successfully!");
+    }
+    
+    private void reloadConfigs() {
+        plugin.getConfigManager().reloadConfig();
+        plugin.getKitManager().loadKits();
+        plugin.getArenaManager().loadArenas();
+    }
+    
     private void sendHelp(Player player) {
         MessageUtils.sendMessage(player, "&6&l=== PakDuels Commands ===");
         MessageUtils.sendMessage(player, "&e/pakmc create <kitname> &7- Create a kit from your inventory");
         MessageUtils.sendMessage(player, "&e/pakmc arena create <name> &7- Create a new arena");
         MessageUtils.sendMessage(player, "&e/pakmc arena editor &7- Open arena management GUI");
         MessageUtils.sendMessage(player, "&e/pakmc kit editor <kitname> &7- Edit kit rules");
+        MessageUtils.sendMessage(player, "&e/pakmc setspawn &7- Set lobby spawn location");
         MessageUtils.sendMessage(player, "&e/pakmc reload &7- Reload configuration");
     }
     
@@ -186,7 +213,7 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
-            return Arrays.asList("create", "arena", "kit", "reload").stream()
+            return Arrays.asList("create", "arena", "kit", "setspawn", "reload").stream()
                     .filter(cmd -> cmd.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
         } else if (args.length == 2) {

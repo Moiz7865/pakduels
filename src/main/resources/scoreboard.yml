@@ -1,0 +1,18 @@
+# PakDuels Scoreboard Configuration
+# Use placeholders: {player1}, {player2}, {score1}, {score2}, {kit}, {round}, {maxrounds}, {state}
+# Color codes: &a, &b, &c, etc. or hex codes: &#FF5555
+
+title: "&6&lPakDuels"
+
+lines:
+  - ""
+  - "&e&lDuel Info:"
+  - "&7Kit: &f{kit}"
+  - "&7Round: &f{round}&7/&f{maxrounds}"
+  - ""
+  - "&a&l{player1}: &f{score1}"
+  - "&c&l{player2}: &f{score2}"
+  - ""
+  - "&7Status: &f{state}"
+  - ""
+  - "&6pakmc.net"
