@@ -314,6 +314,26 @@ public class DuelManager {
         teleportToSpawn(player2);
     }
     
+    private void restorePlayerState(Player player) {
+        // Restore original inventory
+        Duel duel = playerDuels.get(player);
+        if (duel != null) {
+            duel.restorePlayerInventory(player);
+        }
+        
+        // Reset player state
+        player.setHealth(20.0);
+        player.setFoodLevel(20);
+        player.setSaturation(20.0f);
+        player.setGameMode(org.bukkit.GameMode.SURVIVAL);
+        player.setInvulnerable(false);
+        
+        // Clear effects
+        for (org.bukkit.potion.PotionEffect effect : player.getActivePotionEffects()) {
+            player.removePotionEffect(effect.getType());
+        }
+    }
+    
     private void teleportToSpawn(Player player) {
         if (plugin.getConfigManager().hasSpawnSet()) {
             String worldName = plugin.getConfigManager().getSpawnWorldName();
