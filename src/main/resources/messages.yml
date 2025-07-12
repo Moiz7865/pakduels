@@ -119,6 +119,18 @@ messages:
     enabled: true
     text: "&aSpawn Point {spawn} set!"
   
+  arena-center-set:
+    enabled: true
+    text: "&aArena center set!"
+  
+  arena-cloned:
+    enabled: true
+    text: "&aArena cloned successfully as &f{name}&a!"
+  
+  arena-regenerated:
+    enabled: true
+    text: "&aArena regenerated successfully!"
+  
   # Admin messages
   spawn-set:
     enabled: true

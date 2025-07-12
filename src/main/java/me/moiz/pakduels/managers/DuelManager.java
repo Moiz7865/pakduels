@@ -55,6 +55,13 @@ public class DuelManager {
                 .orElse(null);
     }
     
+    public DuelRequest getLatestDuelRequest(Player challenged) {
+        return duelRequests.values().stream()
+                .filter(request -> request.getChallenged().equals(challenged))
+                .max((r1, r2) -> Long.compare(r1.getCreatedAt(), r2.getCreatedAt()))
+                .orElse(null);
+    }
+    
     public void removeDuelRequest(DuelRequest request) {
         duelRequests.remove(request.getId());
     }
@@ -264,7 +271,7 @@ public class DuelManager {
         
         // Regenerate arena if enabled
         if (duel.getArena().isRegenerationEnabled()) {
-            // TODO: Implement FAWE regeneration
+            plugin.getArenaCloneManager().regenerateArena(duel.getArena());
         }
         
         // Start countdown

@@ -125,6 +125,32 @@ public class ArenaEditorGui {
         regen.setItemMeta(regenMeta);
         inventory.setItem(31, regen);
         
+        // Set Center button
+        ItemStack setCenter = new ItemStack(arena.getCenter() != null ? Material.LIME_DYE : Material.RED_DYE);
+        ItemMeta setCenterMeta = setCenter.getItemMeta();
+        setCenterMeta.setDisplayName("§e§lSet Center");
+        setCenterMeta.setLore(Arrays.asList(
+            "§7Set the center point for cloning",
+            "§7Status: " + (arena.getCenter() != null ? "§aSet" : "§cNot set"),
+            "",
+            "§e§lClick to set!"
+        ));
+        setCenter.setItemMeta(setCenterMeta);
+        inventory.setItem(33, setCenter);
+        
+        // Clone Arena button
+        ItemStack cloneArena = new ItemStack(Material.STRUCTURE_BLOCK);
+        ItemMeta cloneArenaMeta = cloneArena.getItemMeta();
+        cloneArenaMeta.setDisplayName("§b§lClone Arena");
+        cloneArenaMeta.setLore(Arrays.asList(
+            "§7Clone this arena to your location",
+            "§7Requires center point to be set",
+            "",
+            "§e§lClick to clone!"
+        ));
+        cloneArena.setItemMeta(cloneArenaMeta);
+        inventory.setItem(34, cloneArena);
+        
         // Save button
         ItemStack save = new ItemStack(Material.EMERALD);
         ItemMeta saveMeta = save.getItemMeta();
@@ -218,9 +244,19 @@ public class ArenaEditorGui {
                 plugin.getArenaManager().saveArena(arena);
                 refresh();
                 break;
+            case 33: // Set Center
+                arena.setCenter(player.getLocation().clone());
+                MessageUtils.sendMessage(player, "&aArena center set!");
+                plugin.getArenaManager().saveArena(arena);
+                refresh();
+                break;
+            case 34: // Clone Arena
+                cloneArena();
+                break;
             case 45: // Save
                 plugin.getArenaManager().saveArena(arena);
                 MessageUtils.sendMessage(player, "&aArena saved successfully!");
+                player.closeInventory();
                 break;
             case 46: // Delete
                 plugin.getArenaManager().removeArena(arena.getName());
@@ -233,5 +269,56 @@ public class ArenaEditorGui {
                 plugin.getGuiManager().openArenaListGUI(player);
                 break;
         }
+    }
+    
+    private void cloneArena() {
+        if (arena.getCenter() == null) {
+            MessageUtils.sendMessage(player, "&cYou must set the arena center first!");
+            return;
+        }
+        
+        if (!arena.isComplete()) {
+            MessageUtils.sendMessage(player, "&cOriginal arena must be complete before cloning!");
+            return;
+        }
+        
+        // Generate unique clone name
+        String baseName = arena.getName() + "_clone";
+        String cloneName = baseName;
+        int counter = 1;
+        while (plugin.getArenaManager().hasArena(cloneName)) {
+            cloneName = baseName + "_" + counter;
+            counter++;
+        }
+        
+        Location originalCenter = arena.getCenter();
+        Location newCenter = player.getLocation().clone();
+        
+        // Calculate offsets from original center
+        Location pos1Offset = arena.getPosition1().clone().subtract(originalCenter);
+        Location pos2Offset = arena.getPosition2().clone().subtract(originalCenter);
+        Location spawn1Offset = arena.getSpawnPoint1().clone().subtract(originalCenter);
+        Location spawn2Offset = arena.getSpawnPoint2().clone().subtract(originalCenter);
+        
+        // Apply offsets to new center
+        Location newPos1 = newCenter.clone().add(pos1Offset);
+        Location newPos2 = newCenter.clone().add(pos2Offset);
+        Location newSpawn1 = newCenter.clone().add(spawn1Offset);
+        Location newSpawn2 = newCenter.clone().add(spawn2Offset);
+        
+        // Create new arena
+        Arena clonedArena = new Arena(cloneName, newPos1, newPos2, newSpawn1, newSpawn2);
+        clonedArena.setCenter(newCenter);
+        clonedArena.setAllowedKits(new ArrayList<>(arena.getAllowedKits()));
+        clonedArena.setRegenerationEnabled(arena.isRegenerationEnabled());
+        
+        // Save the cloned arena
+        plugin.getArenaManager().addArena(clonedArena);
+        
+        // Handle schematic cloning with FAWE
+        plugin.getArenaCloneManager().cloneArenaSchematic(arena, clonedArena, player);
+        
+        MessageUtils.sendMessage(player, "&aArena cloned successfully as &f" + cloneName + "&a!");
+        player.closeInventory();
     }
 }

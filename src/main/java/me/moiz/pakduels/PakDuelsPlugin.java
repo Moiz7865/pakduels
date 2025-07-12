@@ -19,6 +19,7 @@ public class PakDuelsPlugin extends JavaPlugin {
     private ScoreboardManager scoreboardManager;
     private GuiManager guiManager;
     private HealthDisplayManager healthDisplayManager;
+    private ArenaCloneManager arenaCloneManager;
     
     @Override
     public void onEnable() {
@@ -36,6 +37,7 @@ public class PakDuelsPlugin extends JavaPlugin {
         this.scoreboardManager = new ScoreboardManager(this);
         this.guiManager = new GuiManager(this);
         this.healthDisplayManager = new HealthDisplayManager(this);
+        this.arenaCloneManager = new ArenaCloneManager(this);
         
         // Load configurations
         configManager.loadConfigs();
@@ -103,5 +105,9 @@ public class PakDuelsPlugin extends JavaPlugin {
     
     public HealthDisplayManager getHealthDisplayManager() {
         return healthDisplayManager;
+    }
+    
+    public ArenaCloneManager getArenaCloneManager() {
+        return arenaCloneManager;
     }
 }
