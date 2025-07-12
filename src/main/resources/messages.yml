@@ -1,0 +1,133 @@
+# PakDuels Messages Configuration
+# Set enabled to false to disable specific messages
+
+messages:
+  prefix:
+    enabled: true
+    text: "&6[PakDuels] &r"
+  
+  # Duel messages
+  duel-request-sent:
+    enabled: true
+    text: "&aDuel request sent to &f{player}&a!"
+  
+  duel-request-received:
+    enabled: true
+    text: "&6{player} &ahas challenged you to a duel!"
+  
+  duel-request-details:
+    enabled: true
+    text: "&aKit: &f{kit} &a| Rounds: &f{rounds}"
+  
+  duel-request-response:
+    enabled: true
+    text: "&aType &f/duel accept &aor &f/duel deny &ato respond."
+  
+  duel-started:
+    enabled: true
+    text: "&aDuel started against &f{player}&a!"
+  
+  duel-ended:
+    enabled: true
+    text: "&6&l{winner} &a&lwins the duel!"
+  
+  duel-draw:
+    enabled: true
+    text: "&6&lDuel ended in a draw!"
+  
+  round-won:
+    enabled: true
+    text: "&6Round {round} won by &f{winner}&6!"
+  
+  # Countdown messages
+  countdown-organize:
+    enabled: true
+    text: "&7Organize your inventory"
+  
+  countdown-go:
+    enabled: true
+    text: "&a&lGO!"
+  
+  # Error messages
+  already-in-duel:
+    enabled: true
+    text: "&cYou are already in a duel!"
+  
+  player-not-found:
+    enabled: true
+    text: "&cPlayer not found!"
+  
+  cannot-duel-self:
+    enabled: true
+    text: "&cYou cannot duel yourself!"
+  
+  target-in-duel:
+    enabled: true
+    text: "&cThat player is already in a duel!"
+  
+  kit-not-found:
+    enabled: true
+    text: "&cKit not found!"
+  
+  arena-not-found:
+    enabled: true
+    text: "&cNo available arena found for this kit!"
+  
+  invalid-rounds:
+    enabled: true
+    text: "&cRounds must be between 1 and 10!"
+  
+  # Kit messages
+  kit-created:
+    enabled: true
+    text: "&aKit &f{kit} &acreated successfully!"
+  
+  kit-exists:
+    enabled: true
+    text: "&cA kit with that name already exists!"
+  
+  kit-saved:
+    enabled: true
+    text: "&aKit saved successfully!"
+  
+  kit-deleted:
+    enabled: true
+    text: "&cKit deleted successfully!"
+  
+  # Arena messages
+  arena-created:
+    enabled: true
+    text: "&aArena &f{arena} &acreated successfully!"
+  
+  arena-exists:
+    enabled: true
+    text: "&cAn arena with that name already exists!"
+  
+  arena-saved:
+    enabled: true
+    text: "&aArena saved successfully!"
+  
+  arena-deleted:
+    enabled: true
+    text: "&cArena deleted successfully!"
+  
+  arena-position-set:
+    enabled: true
+    text: "&aArena {position} set!"
+  
+  arena-spawn-set:
+    enabled: true
+    text: "&aSpawn Point {spawn} set!"
+  
+  # Admin messages
+  spawn-set:
+    enabled: true
+    text: "&aSpawn location set successfully!"
+  
+  configs-reloaded:
+    enabled: true
+    text: "&aAll configurations reloaded!"
+  
+  no-permission:
+    enabled: true
+    text: "&cYou don't have permission to use this command!"

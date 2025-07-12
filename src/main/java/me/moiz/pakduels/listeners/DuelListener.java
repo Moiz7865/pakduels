@@ -3,6 +3,7 @@ package me.moiz.pakduels.listeners;
 import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.models.Duel;
 import me.moiz.pakduels.models.Kit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

@@ -5,8 +5,8 @@ duel:
   # Time in seconds for inventory countdown (players can organize their inventory)
   inventory-countdown-time: 10
   
-  # Enable health indicators above players
-  health-indicators: true
+  # Delay between rounds in seconds
+  round-delay: 2
   
   # Arena regeneration settings
   regeneration:
@@ -16,9 +16,6 @@ duel:
     # Delay before regenerating arena (in ticks, 20 ticks = 1 second)
     delay: 60
 
-  # Delay between rounds in seconds
-  round-delay: 2
-
 # Spawn location (where players are teleported after duels)
 spawn:
   world: "world"
@@ -27,17 +24,3 @@ spawn:
   z: 0.0
   yaw: 0.0
   pitch: 0.0
-
-# Messages
-messages:
-  prefix: "&6[PakDuels] &r"
-  
-# Kit default rules (applied to new kits)
-kit-defaults:
-  natural-health-regen: true
-  block-break: false
-  block-place: false
-  health-indicators: true
-  hunger-loss: false
-  item-drop: false
-  item-pickup: false

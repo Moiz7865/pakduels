@@ -8,12 +8,20 @@ import me.moiz.pakduels.models.Kit;
 import me.moiz.pakduels.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class DuelManager {
     private final PakDuelsPlugin plugin;
@@ -23,9 +31,9 @@ public class DuelManager {
     
     public DuelManager(PakDuelsPlugin plugin) {
         this.plugin = plugin;
-        this.duelRequests = new ConcurrentHashMap<>();
-        this.activeDuels = new ConcurrentHashMap<>();
-        this.playerDuels = new ConcurrentHashMap<>();
+        this.duelRequests = new HashMap<>();
+        this.activeDuels = new HashMap<>();
+        this.playerDuels = new HashMap<>();
         
         // Clean up expired requests every 30 seconds
         new BukkitRunnable() {
@@ -67,8 +75,8 @@ public class DuelManager {
         // Find available arena
         Arena arena = plugin.getArenaManager().getAvailableArena(kit.getName());
         if (arena == null) {
-            MessageUtils.sendMessage(player1, "&cNo available arena found for this kit!");
-            MessageUtils.sendMessage(player2, "&cNo available arena found for this kit!");
+            MessageUtils.sendMessage(player1, "arena-not-found");
+            MessageUtils.sendMessage(player2, "arena-not-found");
             removeDuelRequest(request);
             return;
         }
@@ -96,8 +104,8 @@ public class DuelManager {
         Kit kit = duel.getKit();
         
         // Save original inventories and states
-        savePlayerState(player1);
-        savePlayerState(player2);
+        duel.savePlayerInventory(player1);
+        duel.savePlayerInventory(player2);
         
         // Teleport players
         player1.teleport(arena.getSpawnPoint1());
@@ -121,8 +129,8 @@ public class DuelManager {
         // Start inventory countdown
         startInventoryCountdown(duel);
         
-        MessageUtils.sendMessage(player1, "&aDuel started against &f" + player2.getName() + "&a!");
-        MessageUtils.sendMessage(player2, "&aDuel started against &f" + player1.getName() + "&a!");
+        MessageUtils.sendMessage(player1, "duel-started", "player", player2.getName());
+        MessageUtils.sendMessage(player2, "duel-started", "player", player1.getName());
     }
     
     private void startInventoryCountdown(Duel duel) {
@@ -147,10 +155,12 @@ public class DuelManager {
                 }
                 
                 if (timeLeft <= 5) {
-                    // Show countdown
-                    String title = "&e" + timeLeft;
-                    MessageUtils.sendMessage(duel.getPlayer1(), title);
-                    MessageUtils.sendMessage(duel.getPlayer2(), title);
+                    Component title = Component.text(String.valueOf(timeLeft), NamedTextColor.RED);
+                    Component subtitle = Component.text(plugin.getConfigManager().getMessageText("countdown-organize"), NamedTextColor.GRAY);
+                    
+                    Title titleObj = Title.title(title, subtitle);
+                    duel.getPlayer1().showTitle(titleObj);
+                    duel.getPlayer2().showTitle(titleObj);
                     
                     // Play sound
                     duel.getPlayer1().playSound(duel.getPlayer1().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
@@ -172,8 +182,11 @@ public class DuelManager {
             public void run() {
                 if (countdown <= 0) {
                     duel.setState(Duel.DuelState.IN_PROGRESS);
-                    MessageUtils.sendMessage(duel.getPlayer1(), "&a&lGO!");
-                    MessageUtils.sendMessage(duel.getPlayer2(), "&a&lGO!");
+                    
+                    Component goTitle = Component.text(plugin.getConfigManager().getMessageText("countdown-go"), NamedTextColor.GREEN);
+                    Title titleObj = Title.title(goTitle, Component.empty());
+                    duel.getPlayer1().showTitle(titleObj);
+                    duel.getPlayer2().showTitle(titleObj);
                     
                     // Remove invulnerability
                     duel.getPlayer1().setInvulnerable(false);
@@ -187,9 +200,10 @@ public class DuelManager {
                     return;
                 }
                 
-                String title = "&e&l" + countdown;
-                MessageUtils.sendMessage(duel.getPlayer1(), title);
-                MessageUtils.sendMessage(duel.getPlayer2(), title);
+                Component title = Component.text(String.valueOf(countdown), NamedTextColor.YELLOW);
+                Title titleObj = Title.title(title, Component.empty());
+                duel.getPlayer1().showTitle(titleObj);
+                duel.getPlayer2().showTitle(titleObj);
                 
                 duel.getPlayer1().playSound(duel.getPlayer1().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
                 duel.getPlayer2().playSound(duel.getPlayer2().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
@@ -205,8 +219,11 @@ public class DuelManager {
         duel.setState(Duel.DuelState.ROUND_ENDING);
         duel.incrementScore(winner);
         
-        MessageUtils.sendMessage(duel.getPlayer1(), "&6Round " + duel.getCurrentRound() + " won by &f" + winner.getName() + "&6!");
-        MessageUtils.sendMessage(duel.getPlayer2(), "&6Round " + duel.getCurrentRound() + " won by &f" + winner.getName() + "&6!");
+        String message = plugin.getConfigManager().getMessageText("round-won")
+                .replace("{round}", String.valueOf(duel.getCurrentRound()))
+                .replace("{winner}", winner.getName());
+        MessageUtils.sendRawMessage(duel.getPlayer1(), message);
+        MessageUtils.sendRawMessage(duel.getPlayer2(), message);
         
         plugin.getScoreboardManager().updateDuelScoreboard(duel);
         
@@ -262,11 +279,11 @@ public class DuelManager {
         
         // Announce winner
         if (winner != null) {
-            MessageUtils.sendMessage(player1, "&6&l" + winner.getName() + " &a&lwins the duel!");
-            MessageUtils.sendMessage(player2, "&6&l" + winner.getName() + " &a&lwins the duel!");
+            MessageUtils.sendMessage(player1, "duel-ended", "winner", winner.getName());
+            MessageUtils.sendMessage(player2, "duel-ended", "winner", winner.getName());
         } else {
-            MessageUtils.sendMessage(player1, "&6&lDuel ended in a draw!");
-            MessageUtils.sendMessage(player2, "&6&lDuel ended in a draw!");
+            MessageUtils.sendMessage(player1, "duel-draw");
+            MessageUtils.sendMessage(player2, "duel-draw");
         }
         
         // Cleanup
@@ -303,10 +320,12 @@ public class DuelManager {
             double x = plugin.getConfigManager().getSpawnX();
             double y = plugin.getConfigManager().getSpawnY();
             double z = plugin.getConfigManager().getSpawnZ();
+            float yaw = plugin.getConfigManager().getSpawnYaw();
+            float pitch = plugin.getConfigManager().getSpawnPitch();
             
             org.bukkit.World world = Bukkit.getWorld(worldName);
             if (world != null) {
-                Location spawnLoc = new Location(world, x, y, z);
+                Location spawnLoc = new Location(world, x, y, z, yaw, pitch);
                 player.teleport(spawnLoc);
             }
         }
@@ -316,14 +335,6 @@ public class DuelManager {
         for (Duel duel : new ArrayList<>(activeDuels.values())) {
             endDuel(duel, null);
         }
-    }
-    
-    private void savePlayerState(Player player) {
-        // TODO: Save player state (inventory, location, etc.)
-    }
-    
-    private void restorePlayerState(Player player) {
-        // TODO: Restore player state
     }
     
     private void applyKit(Player player, Kit kit) {

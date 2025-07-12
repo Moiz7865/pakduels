@@ -37,7 +37,7 @@ public class HealthDisplayManager implements Listener {
     }
     
     // Update player's health value
-    public void updatePlayerHealth(Player player) {
+    private void updatePlayerHealth(Player player) {
         // Only show health indicators if player is in duel and kit allows it
         Duel duel = plugin.getDuelManager().getDuel(player);
         if (duel != null && duel.getKit().getRule("health-indicators")) {
@@ -46,6 +46,13 @@ public class HealthDisplayManager implements Listener {
             if (objective != null) {
                 Score score = objective.getScore(player.getName());
                 score.setScore((int) Math.ceil(player.getHealth())); // Round up partial hearts
+            }
+        } else {
+            // Hide health indicators if not in duel or kit doesn't allow it
+            Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+            Objective objective = scoreboard.getObjective("health");
+            if (objective != null) {
+                scoreboard.resetScores(player.getName());
             }
         }
     }

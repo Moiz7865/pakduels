@@ -53,11 +53,11 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
                 
             case "reload":
                 if (!player.hasPermission("pakmc.admin")) {
-                    MessageUtils.sendMessage(player, "&cYou don't have permission to use this command!");
+                    MessageUtils.sendMessage(player, "no-permission");
                     return true;
                 }
                 reloadConfigs();
-                MessageUtils.sendMessage(player, "&aAll configurations reloaded!");
+                MessageUtils.sendMessage(player, "configs-reloaded");
                 break;
                 
             case "arena":
