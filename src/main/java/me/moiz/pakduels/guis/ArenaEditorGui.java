@@ -4,6 +4,7 @@ import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.models.Arena;
 import me.moiz.pakduels.utils.MessageUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -11,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 
 public class ArenaEditorGui {
     private final PakDuelsPlugin plugin;
@@ -240,13 +242,30 @@ public class ArenaEditorGui {
                 break;
             case 31: // Regeneration toggle
                 arena.setRegenerationEnabled(!arena.isRegenerationEnabled());
-                MessageUtils.sendMessage(player, "&aRegeneration " + (arena.isRegenerationEnabled() ? "enabled" : "disabled") + "!");
+                MessageUtils.sendRawMessage(player, "&aRegeneration " + (arena.isRegenerationEnabled() ? "enabled" : "disabled") + "!");
+                
+                // Auto-save schematic when regeneration is enabled
+                if (arena.isRegenerationEnabled() && arena.isComplete()) {
+                    MessageUtils.sendRawMessage(player, "&eSaving arena schematic...");
+                    plugin.getArenaCloneManager().saveArenaSchematic(arena).thenAccept(success -> {
+                        if (success) {
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                MessageUtils.sendRawMessage(player, "&aSchematic saved successfully!");
+                            });
+                        } else {
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                MessageUtils.sendRawMessage(player, "&cFailed to save schematic!");
+                            });
+                        }
+                    });
+                }
+                
                 plugin.getArenaManager().saveArena(arena);
                 refresh();
                 break;
             case 33: // Set Center
                 arena.setCenter(player.getLocation().clone());
-                MessageUtils.sendMessage(player, "&aArena center set!");
+                MessageUtils.sendRawMessage(player, "&aArena center set!");
                 plugin.getArenaManager().saveArena(arena);
                 refresh();
                 break;
@@ -255,13 +274,13 @@ public class ArenaEditorGui {
                 break;
             case 45: // Save
                 plugin.getArenaManager().saveArena(arena);
-                MessageUtils.sendMessage(player, "&aArena saved successfully!");
+                MessageUtils.sendRawMessage(player, "&aArena saved successfully!");
                 player.closeInventory();
                 break;
             case 46: // Delete
                 plugin.getArenaManager().removeArena(arena.getName());
                 plugin.getGuiManager().removeArenaEditorGui(player);
-                MessageUtils.sendMessage(player, "&cArena deleted successfully!");
+                MessageUtils.sendRawMessage(player, "&cArena deleted successfully!");
                 player.closeInventory();
                 break;
             case 53: // Back
@@ -273,12 +292,12 @@ public class ArenaEditorGui {
     
     private void cloneArena() {
         if (arena.getCenter() == null) {
-            MessageUtils.sendMessage(player, "&cYou must set the arena center first!");
+            MessageUtils.sendRawMessage(player, "&cYou must set the arena center first!");
             return;
         }
         
         if (!arena.isComplete()) {
-            MessageUtils.sendMessage(player, "&cOriginal arena must be complete before cloning!");
+            MessageUtils.sendRawMessage(player, "&cOriginal arena must be complete before cloning!");
             return;
         }
         
@@ -318,7 +337,7 @@ public class ArenaEditorGui {
         // Handle schematic cloning with FAWE
         plugin.getArenaCloneManager().cloneArenaSchematic(arena, clonedArena, player);
         
-        MessageUtils.sendMessage(player, "&aArena cloned successfully as &f" + cloneName + "&a!");
+        MessageUtils.sendRawMessage(player, "&aArena cloned successfully as &f" + cloneName + "&a!");
         player.closeInventory();
     }
 }

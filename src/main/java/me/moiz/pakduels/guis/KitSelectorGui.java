@@ -120,11 +120,11 @@ public class KitSelectorGui {
                 for (Kit kit : plugin.getKitManager().getAllKits()) {
                     arena.addAllowedKit(kit.getName());
                 }
-                MessageUtils.sendMessage(player, "&cNow restricting to specific kits!");
+                MessageUtils.sendRawMessage(player, "&cNow restricting to specific kits!");
             } else {
                 // Currently restricted, allow all
                 arena.getAllowedKits().clear();
-                MessageUtils.sendMessage(player, "&aNow allowing all kits!");
+                MessageUtils.sendRawMessage(player, "&aNow allowing all kits!");
             }
             plugin.getArenaManager().saveArena(arena);
             refresh();
@@ -146,10 +146,10 @@ public class KitSelectorGui {
                     
                     if (arena.getAllowedKits().contains(kit.getName())) {
                         arena.removeAllowedKit(kit.getName());
-                        MessageUtils.sendMessage(player, "&cKit &f" + kit.getName() + " &cis no longer allowed!");
+                        MessageUtils.sendRawMessage(player, "&cKit &f" + kit.getName() + " &cis no longer allowed!");
                     } else {
                         arena.addAllowedKit(kit.getName());
-                        MessageUtils.sendMessage(player, "&aKit &f" + kit.getName() + " &ais now allowed!");
+                        MessageUtils.sendRawMessage(player, "&aKit &f" + kit.getName() + " &ais now allowed!");
                     }
                     
                     plugin.getArenaManager().saveArena(arena);

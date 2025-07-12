@@ -98,19 +98,19 @@ public class GuiListener implements Listener {
                 switch (gui.getEditMode()) {
                     case POSITION_1:
                         arena.setPosition1(playerLoc.clone());
-                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
+                        MessageUtils.sendRawMessage(player, "&aArena Position 1 set!");
                         break;
                     case POSITION_2:
                         arena.setPosition2(playerLoc.clone());
-                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
+                        MessageUtils.sendRawMessage(player, "&aArena Position 2 set!");
                         break;
                     case SPAWN_1:
                         arena.setSpawnPoint1(playerLoc.clone());
-                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
+                        MessageUtils.sendRawMessage(player, "&aSpawn Point 1 set!");
                         break;
                     case SPAWN_2:
                         arena.setSpawnPoint2(playerLoc.clone());
-                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
+                        MessageUtils.sendRawMessage(player, "&aSpawn Point 2 set!");
                         break;
                 }
                 
