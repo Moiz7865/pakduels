@@ -33,9 +33,14 @@ public class ArenaCloneManager {
         this.plugin = plugin;
         this.schematicsFolder = new File(plugin.getDataFolder(), "schematics");
         
+        // Ensure directory exists with proper permissions
         if (!schematicsFolder.exists()) {
-            schematicsFolder.mkdirs();
+            boolean created = schematicsFolder.mkdirs();
+            plugin.getLogger().info("Created schematics folder: " + created);
         }
+        
+        plugin.getLogger().info("Schematics folder path: " + schematicsFolder.getAbsolutePath());
+        plugin.getLogger().info("Schematics folder writable: " + schematicsFolder.canWrite());
     }
     
     public CompletableFuture<Boolean> saveArenaSchematic(Arena arena) {
@@ -46,7 +51,16 @@ public class ArenaCloneManager {
         
         return CompletableFuture.supplyAsync(() -> {
             try {
+                plugin.getLogger().info("Starting schematic save for arena: " + arena.getName());
+                
+                // Check if world exists
+                if (arena.getPosition1().getWorld() == null) {
+                    plugin.getLogger().severe("Arena world is null for: " + arena.getName());
+                    return false;
+                }
+                
                 com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getPosition1().getWorld());
+                plugin.getLogger().info("World adapted successfully: " + world.getName());
                 
                 // Use raw positions (no min/max) to preserve exact structure
                 BlockVector3 pos1 = BlockVector3.at(
@@ -61,27 +75,56 @@ public class ArenaCloneManager {
                     arena.getPosition2().getBlockZ()
                 );
                 
+                plugin.getLogger().info("Positions - Pos1: " + pos1 + ", Pos2: " + pos2);
+                
                 CuboidRegion region = new CuboidRegion(world, pos1, pos2);
+                plugin.getLogger().info("Region created with volume: " + region.getVolume());
+                
+                File schematicFile = new File(schematicsFolder, arena.getName() + ".schem");
+                plugin.getLogger().info("Schematic file path: " + schematicFile.getAbsolutePath());
+                
+                // Ensure parent directory exists
+                if (!schematicFile.getParentFile().exists()) {
+                    schematicFile.getParentFile().mkdirs();
+                }
                 
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
+                    plugin.getLogger().info("EditSession created successfully");
+                    
                     Clipboard clipboard = editSession.lazyCopy(region);
+                    plugin.getLogger().info("Clipboard created with dimensions: " + clipboard.getDimensions());
                     
-                    File schematicFile = new File(schematicsFolder, arena.getName() + ".schem");
                     ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
+                    if (format == null) {
+                        plugin.getLogger().severe("Could not find clipboard format for .schem file");
+                        return false;
+                    }
                     
-                    if (format != null) {
-                        try (ClipboardWriter writer = format.getWriter(new FileOutputStream(schematicFile))) {
-                            writer.write(clipboard);
-                            plugin.getLogger().info("Saved schematic for arena: " + arena.getName());
-                            return true;
-                        }
+                    plugin.getLogger().info("Using format: " + format.getName());
+                    
+                    try (FileOutputStream fos = new FileOutputStream(schematicFile);
+                         ClipboardWriter writer = format.getWriter(fos)) {
+                        
+                        writer.write(clipboard);
+                        plugin.getLogger().info("Schematic written to file successfully");
+                    }
+                    
+                    // Verify file was created
+                    if (schematicFile.exists() && schematicFile.length() > 0) {
+                        plugin.getLogger().info("Schematic file verified - Size: " + schematicFile.length() + " bytes");
+                        return true;
+                    } else {
+                        plugin.getLogger().severe("Schematic file was not created or is empty");
+                        return false;
                     }
                 }
+                
             } catch (Exception e) {
                 plugin.getLogger().severe("Failed to save schematic for arena: " + arena.getName());
+                plugin.getLogger().severe("Error details: " + e.getClass().getSimpleName() + " - " + e.getMessage());
                 e.printStackTrace();
+                return false;
             }
-            return false;
         });
     }
     
@@ -89,14 +132,12 @@ public class ArenaCloneManager {
         File schematicFile = new File(schematicsFolder, originalArena.getName() + ".schem");
         
         if (!schematicFile.exists()) {
-            // Create schematic first
             MessageUtils.sendRawMessage(player, "&eCreating schematic for arena...");
             saveArenaSchematic(originalArena).thenAccept(success -> {
                 if (success) {
-                    // Wait a bit and try again
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         cloneArenaSchematic(originalArena, clonedArena, player);
-                    }, 40L); // 2 seconds delay
+                    }, 40L);
                 } else {
                     MessageUtils.sendRawMessage(player, "&cFailed to create schematic!");
                 }
@@ -106,6 +147,8 @@ public class ArenaCloneManager {
         
         CompletableFuture.runAsync(() -> {
             try {
+                plugin.getLogger().info("Starting arena clone for: " + originalArena.getName());
+                
                 com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(clonedArena.getCenter().getWorld());
                 
                 ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
@@ -117,8 +160,10 @@ public class ArenaCloneManager {
                 }
                 
                 Clipboard clipboard;
-                try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
+                try (FileInputStream fis = new FileInputStream(schematicFile);
+                     ClipboardReader reader = format.getReader(fis)) {
                     clipboard = reader.read();
+                    plugin.getLogger().info("Clipboard loaded successfully");
                 }
                 
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
@@ -132,6 +177,7 @@ public class ArenaCloneManager {
                         .build();
                     
                     Operations.complete(operation);
+                    plugin.getLogger().info("Arena cloned successfully");
                     
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         MessageUtils.sendRawMessage(player, "&aArena schematic pasted successfully!");
@@ -142,7 +188,7 @@ public class ArenaCloneManager {
                 e.printStackTrace();
                 
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    MessageUtils.sendRawMessage(player, "&cFailed to paste arena schematic! Error: " + e.getMessage());
+                    MessageUtils.sendRawMessage(player, "&cFailed to paste arena schematic! Check console for details.");
                 });
             }
         });
@@ -178,7 +224,8 @@ public class ArenaCloneManager {
                 }
                 
                 Clipboard clipboard;
-                try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
+                try (FileInputStream fis = new FileInputStream(schematicFile);
+                     ClipboardReader reader = format.getReader(fis)) {
                     clipboard = reader.read();
                 }
                 
@@ -198,6 +245,7 @@ public class ArenaCloneManager {
                 }
             } catch (Exception e) {
                 plugin.getLogger().severe("Failed to regenerate arena: " + arena.getName());
+                plugin.getLogger().severe("Error: " + e.getMessage());
                 e.printStackTrace();
                 return false;
             }

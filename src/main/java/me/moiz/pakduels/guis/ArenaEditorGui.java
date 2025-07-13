@@ -247,7 +247,16 @@ public class ArenaEditorGui {
                 // Auto-save schematic when regeneration is enabled
                 if (arena.isRegenerationEnabled() && arena.isComplete()) {
                     MessageUtils.sendRawMessage(player, "&eSaving arena schematic...");
-                    plugin.getArenaCloneManager().saveArenaSchematic(arena).thenAccept(success -> {
+                    plugin.getArenaCloneManager().saveArenaSchematic(arena).whenComplete((success, throwable) -> {
+                        if (throwable != null) {
+                            plugin.getLogger().severe("Exception during schematic save: " + throwable.getMessage());
+                            throwable.printStackTrace();
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                MessageUtils.sendRawMessage(player, "&cError saving schematic: " + throwable.getMessage());
+                            });
+                            return;
+                        }
+                        
                         if (success) {
                             Bukkit.getScheduler().runTask(plugin, () -> {
                                 MessageUtils.sendRawMessage(player, "&aSchematic saved successfully!");
