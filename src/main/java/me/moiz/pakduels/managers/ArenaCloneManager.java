@@ -140,7 +140,8 @@ public class ArenaCloneManager {
                 
                 // Paste schematic
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    Operation operation = clipboard.createPaste(editSession)
+                    Operation operation = clipboard
+                        .createPaste(editSession)
                         .to(to)
                         .ignoreAirBlocks(false)
                         .build();
@@ -192,7 +193,8 @@ public class ArenaCloneManager {
                 
                 // Paste schematic
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    Operation operation = clipboard.createPaste(editSession)
+                    Operation operation = clipboard
+                        .createPaste(editSession)
                         .to(to)
                         .ignoreAirBlocks(false)
                         .build();

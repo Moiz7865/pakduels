@@ -54,16 +54,16 @@ public class ArenaEditorGui {
         ItemStack pos1 = new ItemStack(arena.getPosition1() != null ? Material.LIME_DYE : Material.RED_DYE);
         ItemMeta pos1Meta = pos1.getItemMeta();
         pos1Meta.setDisplayName("§c§lPosition 1");
-        List<String> pos1Lore = new ArrayList<>(Arrays.asList(
+        java.util.List<String> pos1Lore = new ArrayList<>(Arrays.asList(
             "§7Set the first corner of the arena",
             "§7Status: " + (arena.getPosition1() != null ? "§aSet" : "§cNot set")
         ));
         if (arena.getPosition1() != null) {
-            Location pos1 = arena.getPosition1();
+            Location pos1Loc = arena.getPosition1();
             pos1Lore.add("§7Coordinates:");
-            pos1Lore.add("§fX: " + pos1.getBlockX());
-            pos1Lore.add("§fY: " + pos1.getBlockY());
-            pos1Lore.add("§fZ: " + pos1.getBlockZ());
+            pos1Lore.add("§fX: " + pos1Loc.getBlockX());
+            pos1Lore.add("§fY: " + pos1Loc.getBlockY());
+            pos1Lore.add("§fZ: " + pos1Loc.getBlockZ());
         }
         pos1Lore.add("");
         pos1Lore.add("§e§lClick to set!");
@@ -75,16 +75,16 @@ public class ArenaEditorGui {
         ItemStack pos2 = new ItemStack(arena.getPosition2() != null ? Material.LIME_DYE : Material.RED_DYE);
         ItemMeta pos2Meta = pos2.getItemMeta();
         pos2Meta.setDisplayName("§c§lPosition 2");
-        List<String> pos2Lore = new ArrayList<>(Arrays.asList(
+        java.util.List<String> pos2Lore = new ArrayList<>(Arrays.asList(
             "§7Set the second corner of the arena",
             "§7Status: " + (arena.getPosition2() != null ? "§aSet" : "§cNot set")
         ));
         if (arena.getPosition2() != null) {
-            Location pos2 = arena.getPosition2();
+            Location pos2Loc = arena.getPosition2();
             pos2Lore.add("§7Coordinates:");
-            pos2Lore.add("§fX: " + pos2.getBlockX());
-            pos2Lore.add("§fY: " + pos2.getBlockY());
-            pos2Lore.add("§fZ: " + pos2.getBlockZ());
+            pos2Lore.add("§fX: " + pos2Loc.getBlockX());
+            pos2Lore.add("§fY: " + pos2Loc.getBlockY());
+            pos2Lore.add("§fZ: " + pos2Loc.getBlockZ());
         }
         pos2Lore.add("");
         pos2Lore.add("§e§lClick to set!");
@@ -96,18 +96,18 @@ public class ArenaEditorGui {
         ItemStack spawn1 = new ItemStack(arena.getSpawnPoint1() != null ? Material.LIME_DYE : Material.RED_DYE);
         ItemMeta spawn1Meta = spawn1.getItemMeta();
         spawn1Meta.setDisplayName("§a§lSpawn Point 1");
-        List<String> spawn1Lore = new ArrayList<>(Arrays.asList(
+        java.util.List<String> spawn1Lore = new ArrayList<>(Arrays.asList(
             "§7Set the first player spawn point",
             "§7Status: " + (arena.getSpawnPoint1() != null ? "§aSet" : "§cNot set")
         ));
         if (arena.getSpawnPoint1() != null) {
-            Location spawn1 = arena.getSpawnPoint1();
+            Location spawn1Loc = arena.getSpawnPoint1();
             spawn1Lore.add("§7Coordinates:");
-            spawn1Lore.add("§fX: " + spawn1.getBlockX());
-            spawn1Lore.add("§fY: " + spawn1.getBlockY());
-            spawn1Lore.add("§fZ: " + spawn1.getBlockZ());
-            spawn1Lore.add("§fYaw: " + String.format("%.1f", spawn1.getYaw()));
-            spawn1Lore.add("§fPitch: " + String.format("%.1f", spawn1.getPitch()));
+            spawn1Lore.add("§fX: " + spawn1Loc.getBlockX());
+            spawn1Lore.add("§fY: " + spawn1Loc.getBlockY());
+            spawn1Lore.add("§fZ: " + spawn1Loc.getBlockZ());
+            spawn1Lore.add("§fYaw: " + String.format("%.1f", spawn1Loc.getYaw()));
+            spawn1Lore.add("§fPitch: " + String.format("%.1f", spawn1Loc.getPitch()));
         }
         spawn1Lore.add("");
         spawn1Lore.add("§e§lClick to set!");
@@ -119,12 +119,12 @@ public class ArenaEditorGui {
         ItemStack spawn2 = new ItemStack(arena.getSpawnPoint2() != null ? Material.LIME_DYE : Material.RED_DYE);
         ItemMeta spawn2Meta = spawn2.getItemMeta();
         spawn2Meta.setDisplayName("§a§lSpawn Point 2");
-        List<String> spawn2Lore = new ArrayList<>(Arrays.asList(
+        java.util.List<String> spawn2Lore = new ArrayList<>(Arrays.asList(
             "§7Set the second player spawn point",
             "§7Status: " + (arena.getSpawnPoint2() != null ? "§aSet" : "§cNot set")
         ));
         if (arena.getSpawnPoint2() != null) {
-            Location spawn2 = arena.getSpawnPoint2();
+            Location spawn2Loc = arena.getSpawnPoint2();
             spawn2Lore.add("§7Coordinates:");
             spawn2Lore.add("§fX: " + spawn2.getBlockX());
             spawn2Lore.add("§fY: " + spawn2Loc.getBlockY());
@@ -167,7 +167,7 @@ public class ArenaEditorGui {
         ItemStack setCenter = new ItemStack(arena.getCenter() != null ? Material.LIME_DYE : Material.RED_DYE);
         ItemMeta setCenterMeta = setCenter.getItemMeta();
         setCenterMeta.setDisplayName("§e§lSet Center");
-        List<String> centerLore = new ArrayList<>(Arrays.asList(
+        java.util.List<String> centerLore = new ArrayList<>(Arrays.asList(
             "§7Set the center point for cloning",
             "§7Status: " + (arena.getCenter() != null ? "§aSet" : "§cNot set")
         ));

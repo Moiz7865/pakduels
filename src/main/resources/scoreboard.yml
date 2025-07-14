@@ -1,9 +1,12 @@
 # PakDuels Scoreboard Configuration
 
-# Scoreboard title
-title: "&6&lPakDuels"
+# Scoreboard title (supports hex colors and legacy codes)
+# Hex format: <#FF5555>text</> or #FF5555
+# Legacy format: &c, &a, etc.
+# Gradient: <gradient:#FF5555:#55FF55>text</>
+title: "<gradient:#FFD700:#FFA500>PakDuels</gradient>"
 
-# Scoreboard lines (supports placeholders)
+# Scoreboard lines (supports placeholders and hex colors)
 # Available placeholders:
 # {player1} - First player name
 # {player2} - Second player name
@@ -14,13 +17,13 @@ title: "&6&lPakDuels"
 # {maxrounds} - Maximum rounds
 # {state} - Current duel state
 lines:
-  - "&7&m━━━━━━━━━━━━━━━━━"
-  - "&e&lDuel Info"
-  - "&7Kit: &f{kit}"
-  - "&7Round: &f{round}&7/&f{maxrounds}"
-  - "&7State: &f{state}"
+  - "<#808080>━━━━━━━━━━━━━━━━━</>"
+  - "<#FFFF55><bold>Duel Info</bold></>"
+  - "<#808080>Kit: <#FFFFFF>{kit}</>"
+  - "<#808080>Round: <#FFFFFF>{round}<#808080>/<#FFFFFF>{maxrounds}</>"
+  - "<#808080>State: <#FFFFFF>{state}</>"
   - ""
-  - "&e&lPlayers"
-  - "&a{player1}: &f{score1}"
-  - "&c{player2}: &f{score2}"
-  - "&7&m━━━━━━━━━━━━━━━━━"
+  - "<#FFFF55><bold>Players</bold></>"
+  - "<#55FF55>{player1}: <#FFFFFF>{score1}</>"
+  - "<#FF5555>{player2}: <#FFFFFF>{score2}</>"
+  - "<#808080>━━━━━━━━━━━━━━━━━</>"

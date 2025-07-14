@@ -4,6 +4,9 @@ import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.models.Duel;
 import me.moiz.pakduels.utils.MessageUtils;
 import fr.mrmicky.fastboard.FastBoard;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -14,10 +17,12 @@ import java.util.stream.Collectors;
 public class ScoreboardManager {
     private final PakDuelsPlugin plugin;
     private final Map<Player, FastBoard> playerBoards;
+    private final MiniMessage miniMessage;
     
     public ScoreboardManager(PakDuelsPlugin plugin) {
         this.plugin = plugin;
         this.playerBoards = new HashMap<>();
+        this.miniMessage = MiniMessage.miniMessage();
     }
     
     public void setupDuelScoreboard(Duel duel) {
@@ -28,10 +33,11 @@ public class ScoreboardManager {
         FastBoard board1 = new FastBoard(player1);
         FastBoard board2 = new FastBoard(player2);
         
-        // Set title
-        String title = MessageUtils.colorize(plugin.getConfigManager().getScoreboardTitle()).toString();
-        board1.updateTitle(title);
-        board2.updateTitle(title);
+        // Set title with hex color support
+        String titleText = plugin.getConfigManager().getScoreboardTitle();
+        Component titleComponent = parseColoredText(titleText);
+        board1.updateTitle(titleComponent);
+        board2.updateTitle(titleComponent);
         
         // Store boards
         playerBoards.put(player1, board1);
@@ -53,10 +59,10 @@ public class ScoreboardManager {
         // Get scoreboard lines from config
         List<String> lines = plugin.getConfigManager().getScoreboardLines();
         
-        // Replace placeholders
-        List<String> processedLines = lines.stream()
+        // Replace placeholders and convert to components
+        List<Component> processedLines = lines.stream()
                 .map(line -> replacePlaceholders(line, duel))
-                .map(line -> MessageUtils.colorize(line).toString())
+                .map(this::parseColoredText)
                 .collect(Collectors.toList());
         
         // Update boards
@@ -107,6 +113,33 @@ public class ScoreboardManager {
                 return "Finished";
             default:
                 return "Unknown";
+        }
+    }
+    
+    /**
+     * Parse colored text supporting both hex colors and legacy color codes
+     * Hex format: <#FF5555>text</> or #FF5555
+     * Legacy format: &c, &a, etc.
+     */
+    private Component parseColoredText(String text) {
+        try {
+            // First try to parse as MiniMessage (hex colors)
+            if (text.contains("<#") || text.contains("<gradient") || text.contains("<rainbow")) {
+                return miniMessage.deserialize(text);
+            }
+            
+            // Check for simple hex format like #FF5555
+            if (text.contains("#")) {
+                // Convert simple hex format to MiniMessage format
+                text = text.replaceAll("#([A-Fa-f0-9]{6})", "<#$1>");
+                return miniMessage.deserialize(text);
+            }
+            
+            // Fall back to legacy color codes
+            return LegacyComponentSerializer.legacyAmpersand().deserialize(text);
+        } catch (Exception e) {
+            // If parsing fails, fall back to legacy
+            return LegacyComponentSerializer.legacyAmpersand().deserialize(text);
         }
     }
     
