@@ -1,254 +1,380 @@
-package me.moiz.pakduels.managers;
+package me.moiz.pakduels.guis;
 
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardWriter;
-import com.sk89q.worldedit.function.operation.Operation;
-import com.sk89q.worldedit.function.operation.Operations;
-import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.regions.CuboidRegion;
-import com.sk89q.worldedit.session.ClipboardHolder;
 import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.models.Arena;
 import me.moiz.pakduels.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.util.concurrent.CompletableFuture;
+import java.util.Arrays;
+import java.util.ArrayList;
 
-public class ArenaCloneManager {
+public class ArenaEditorGui {
     private final PakDuelsPlugin plugin;
-    private final File schematicsFolder;
+    private final Player player;
+    private final Arena arena;
+    private final Inventory inventory;
+    private EditMode editMode;
     
-    public ArenaCloneManager(PakDuelsPlugin plugin) {
+    public enum EditMode {
+        NONE,
+        POSITION_1,
+        POSITION_2,
+        SPAWN_1,
+        SPAWN_2
+    }
+    
+    public ArenaEditorGui(PakDuelsPlugin plugin, Player player, Arena arena) {
         this.plugin = plugin;
-        this.schematicsFolder = new File(plugin.getDataFolder(), "schematics");
+        this.player = player;
+        this.arena = arena;
+        this.inventory = Bukkit.createInventory(null, 54, "Arena Editor: " + arena.getName());
+        this.editMode = EditMode.NONE;
         
-        // Ensure directory exists with proper permissions
-        if (!schematicsFolder.exists()) {
-            boolean created = schematicsFolder.mkdirs();
-            plugin.getLogger().info("Created schematics folder: " + created);
-        }
-        
-        plugin.getLogger().info("Schematics folder path: " + schematicsFolder.getAbsolutePath());
-        plugin.getLogger().info("Schematics folder writable: " + schematicsFolder.canWrite());
+        setupGui();
     }
     
-    public CompletableFuture<Boolean> saveArenaSchematic(Arena arena) {
-        if (!arena.isComplete()) {
-            plugin.getLogger().warning("Cannot save schematic for incomplete arena: " + arena.getName());
-            return CompletableFuture.completedFuture(false);
+    private void setupGui() {
+        // Fill background
+        ItemStack background = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta backgroundMeta = background.getItemMeta();
+        backgroundMeta.setDisplayName(" ");
+        background.setItemMeta(backgroundMeta);
+        
+        for (int i = 0; i < 54; i++) {
+            inventory.setItem(i, background);
         }
         
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                plugin.getLogger().info("Starting schematic save for arena: " + arena.getName());
+        // Position 1
+        ItemStack pos1 = new ItemStack(arena.getPosition1() != null ? Material.LIME_DYE : Material.RED_DYE);
+        ItemMeta pos1Meta = pos1.getItemMeta();
+        pos1Meta.setDisplayName("§c§lPosition 1");
+        List<String> pos1Lore = new ArrayList<>(Arrays.asList(
+            "§7Set the first corner of the arena",
+            "§7Status: " + (arena.getPosition1() != null ? "§aSet" : "§cNot set")
+        ));
+        if (arena.getPosition1() != null) {
+            Location pos1 = arena.getPosition1();
+            pos1Lore.add("§7Coordinates:");
+            pos1Lore.add("§fX: " + pos1.getBlockX());
+            pos1Lore.add("§fY: " + pos1.getBlockY());
+            pos1Lore.add("§fZ: " + pos1.getBlockZ());
+        }
+        pos1Lore.add("");
+        pos1Lore.add("§e§lClick to set!");
+        pos1Meta.setLore(pos1Lore);
+        pos1.setItemMeta(pos1Meta);
+        inventory.setItem(19, pos1);
+        
+        // Position 2
+        ItemStack pos2 = new ItemStack(arena.getPosition2() != null ? Material.LIME_DYE : Material.RED_DYE);
+        ItemMeta pos2Meta = pos2.getItemMeta();
+        pos2Meta.setDisplayName("§c§lPosition 2");
+        List<String> pos2Lore = new ArrayList<>(Arrays.asList(
+            "§7Set the second corner of the arena",
+            "§7Status: " + (arena.getPosition2() != null ? "§aSet" : "§cNot set")
+        ));
+        if (arena.getPosition2() != null) {
+            Location pos2 = arena.getPosition2();
+            pos2Lore.add("§7Coordinates:");
+            pos2Lore.add("§fX: " + pos2.getBlockX());
+            pos2Lore.add("§fY: " + pos2.getBlockY());
+            pos2Lore.add("§fZ: " + pos2.getBlockZ());
+        }
+        pos2Lore.add("");
+        pos2Lore.add("§e§lClick to set!");
+        pos2Meta.setLore(pos2Lore);
+        pos2.setItemMeta(pos2Meta);
+        inventory.setItem(21, pos2);
+        
+        // Spawn 1
+        ItemStack spawn1 = new ItemStack(arena.getSpawnPoint1() != null ? Material.LIME_DYE : Material.RED_DYE);
+        ItemMeta spawn1Meta = spawn1.getItemMeta();
+        spawn1Meta.setDisplayName("§a§lSpawn Point 1");
+        List<String> spawn1Lore = new ArrayList<>(Arrays.asList(
+            "§7Set the first player spawn point",
+            "§7Status: " + (arena.getSpawnPoint1() != null ? "§aSet" : "§cNot set")
+        ));
+        if (arena.getSpawnPoint1() != null) {
+            Location spawn1 = arena.getSpawnPoint1();
+            spawn1Lore.add("§7Coordinates:");
+            spawn1Lore.add("§fX: " + spawn1.getBlockX());
+            spawn1Lore.add("§fY: " + spawn1.getBlockY());
+            spawn1Lore.add("§fZ: " + spawn1.getBlockZ());
+            spawn1Lore.add("§fYaw: " + String.format("%.1f", spawn1.getYaw()));
+            spawn1Lore.add("§fPitch: " + String.format("%.1f", spawn1.getPitch()));
+        }
+        spawn1Lore.add("");
+        spawn1Lore.add("§e§lClick to set!");
+        spawn1Meta.setLore(spawn1Lore);
+        spawn1.setItemMeta(spawn1Meta);
+        inventory.setItem(23, spawn1);
+        
+        // Spawn 2
+        ItemStack spawn2 = new ItemStack(arena.getSpawnPoint2() != null ? Material.LIME_DYE : Material.RED_DYE);
+        ItemMeta spawn2Meta = spawn2.getItemMeta();
+        spawn2Meta.setDisplayName("§a§lSpawn Point 2");
+        List<String> spawn2Lore = new ArrayList<>(Arrays.asList(
+            "§7Set the second player spawn point",
+            "§7Status: " + (arena.getSpawnPoint2() != null ? "§aSet" : "§cNot set")
+        ));
+        if (arena.getSpawnPoint2() != null) {
+            Location spawn2 = arena.getSpawnPoint2();
+            spawn2Lore.add("§7Coordinates:");
+            spawn2Lore.add("§fX: " + spawn2.getBlockX());
+        spawn2.setItemMeta(spawn2Meta);
+        inventory.setItem(25, spawn2);
+        
+        ItemStack allowedKits = new ItemStack(Material.BOOK);
+        ItemMeta allowedKitsMeta = allowedKits.getItemMeta();
+        allowedKitsMeta.setDisplayName("§b§lAllowed Kits");
+        allowedKitsMeta.setLore(Arrays.asList(
+            "§7Manage which kits can use this arena",
+            "§7Current: " + (arena.getAllowedKits().isEmpty() ? "§aAll kits" : "§f" + String.join(", ", arena.getAllowedKits())),
+            "",
+            "§e§lClick to manage!"
+        ));
+        allowedKits.setItemMeta(allowedKitsMeta);
+        inventory.setItem(29, allowedKits);
+        
+        // Regeneration toggle
+        ItemStack regen = new ItemStack(arena.isRegenerationEnabled() ? Material.LIME_DYE : Material.RED_DYE);
+        ItemMeta regenMeta = regen.getItemMeta();
+        regenMeta.setDisplayName("§d§lRegeneration");
+        regenMeta.setLore(Arrays.asList(
+            "§7Toggle arena regeneration",
+            "§7Status: " + (arena.isRegenerationEnabled() ? "§aEnabled" : "§cDisabled"),
+            "",
+            "§e§lClick to toggle!"
+        ));
+        regen.setItemMeta(regenMeta);
+        inventory.setItem(31, regen);
+        
+        // Set Center button
+        ItemStack setCenter = new ItemStack(arena.getCenter() != null ? Material.LIME_DYE : Material.RED_DYE);
+        ItemMeta setCenterMeta = setCenter.getItemMeta();
+        setCenterMeta.setDisplayName("§e§lSet Center");
+        setCenterMeta.setLore(Arrays.asList(
+            "§7Set the center point for cloning",
+            "§7Status: " + (arena.getCenter() != null ? "§aSet" : "§cNot set"),
+            "",
+            "§e§lClick to set!"
+        ));
+        setCenter.setItemMeta(setCenterMeta);
+        inventory.setItem(33, setCenter);
+        
+        // Clone Arena button
+        ItemStack cloneArena = new ItemStack(Material.STRUCTURE_BLOCK);
+        ItemMeta cloneArenaMeta = cloneArena.getItemMeta();
+        cloneArenaMeta.setDisplayName("§b§lClone Arena");
+        cloneArenaMeta.setLore(Arrays.asList(
+            "§7Clone this arena to your location",
+            "§7Requires center point to be set",
+            "",
+            "§e§lClick to clone!"
+        ));
+        cloneArena.setItemMeta(cloneArenaMeta);
+        inventory.setItem(34, cloneArena);
+        
+        // Save button
+        ItemStack save = new ItemStack(Material.EMERALD);
+        ItemMeta saveMeta = save.getItemMeta();
+        saveMeta.setDisplayName("§a§lSave Arena");
+        saveMeta.setLore(Arrays.asList(
+            "§7Save all changes to this arena",
+            "",
+            "§e§lClick to save!"
+        ));
+        save.setItemMeta(saveMeta);
+        inventory.setItem(45, save);
+        
+        // Delete button
+        ItemStack delete = new ItemStack(Material.RED_CONCRETE);
+        ItemMeta deleteMeta = delete.getItemMeta();
+        deleteMeta.setDisplayName("§c§lDelete Arena");
+        deleteMeta.setLore(Arrays.asList(
+            "§7Delete this arena permanently",
+            "§c§lWARNING: This cannot be undone!",
+            "",
+            "§e§lClick to delete!"
+        ));
+        delete.setItemMeta(deleteMeta);
+        inventory.setItem(46, delete);
+        
+        // Back button
+        ItemStack back = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = back.getItemMeta();
+        backMeta.setDisplayName("§7§lBack");
+        backMeta.setLore(Arrays.asList(
+            "§7Return to arena list",
+            "",
+            "§e§lClick to go back!"
+        ));
+        back.setItemMeta(backMeta);
+        inventory.setItem(53, back);
+    }
+    
+    public void open() {
+        player.openInventory(inventory);
+    }
+    
+    public void refresh() {
+        setupGui();
+    }
+    
+    public Inventory getInventory() {
+        return inventory;
+    }
+    
+    public Arena getArena() {
+        return arena;
+    }
+    
+    public EditMode getEditMode() {
+        return editMode;
+    }
+    
+    public void setEditMode(EditMode editMode) {
+        this.editMode = editMode;
+    }
+    
+    public void handleClick(int slot) {
+        switch (slot) {
+            case 19: // Position 1
+                setEditMode(EditMode.POSITION_1);
+                player.closeInventory();
+                MessageUtils.sendMessage(player, "&aClick a block to set Position 1!");
+                break;
+            case 21: // Position 2
+                setEditMode(EditMode.POSITION_2);
+                player.closeInventory();
+                MessageUtils.sendMessage(player, "&aClick a block to set Position 2!");
+                break;
+            case 23: // Spawn 1
+                setEditMode(EditMode.SPAWN_1);
+                player.closeInventory();
+                MessageUtils.sendMessage(player, "&aClick a block to set Spawn Point 1!");
+                break;
+            case 25: // Spawn 2
+                setEditMode(EditMode.SPAWN_2);
+                player.closeInventory();
+                MessageUtils.sendMessage(player, "&aClick a block to set Spawn Point 2!");
+                break;
+            case 29: // Allowed Kits
+                plugin.getGuiManager().openKitSelectorGUI(player, arena);
+                break;
+            case 31: // Regeneration toggle
+                arena.setRegenerationEnabled(!arena.isRegenerationEnabled());
+                MessageUtils.sendRawMessage(player, "&aRegeneration " + (arena.isRegenerationEnabled() ? "enabled" : "disabled") + "!");
                 
-                // Check if world exists
-                if (arena.getPosition1().getWorld() == null) {
-                    plugin.getLogger().severe("Arena world is null for: " + arena.getName());
-                    return false;
-                }
-                
-                com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getPosition1().getWorld());
-                plugin.getLogger().info("World adapted successfully: " + world.getName());
-                
-                // Use raw positions (no min/max) to preserve exact structure
-                BlockVector3 pos1 = BlockVector3.at(
-                    arena.getPosition1().getBlockX(),
-                    arena.getPosition1().getBlockY(),
-                    arena.getPosition1().getBlockZ()
-                );
-                
-                BlockVector3 pos2 = BlockVector3.at(
-                    arena.getPosition2().getBlockX(),
-                    arena.getPosition2().getBlockY(),
-                    arena.getPosition2().getBlockZ()
-                );
-                
-                plugin.getLogger().info("Positions - Pos1: " + pos1 + ", Pos2: " + pos2);
-                
-                CuboidRegion region = new CuboidRegion(world, pos1, pos2);
-                plugin.getLogger().info("Region created with volume: " + region.getVolume());
-                
-                File schematicFile = new File(schematicsFolder, arena.getName() + ".schem");
-                plugin.getLogger().info("Schematic file path: " + schematicFile.getAbsolutePath());
-                
-                // Ensure parent directory exists
-                if (!schematicFile.getParentFile().exists()) {
-                    schematicFile.getParentFile().mkdirs();
-                }
-                
-                try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    plugin.getLogger().info("EditSession created successfully");
-                    
-                    Clipboard clipboard = editSession.lazyCopy(region);
-                    plugin.getLogger().info("Clipboard created with dimensions: " + clipboard.getDimensions());
-                    
-                    ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
-                    if (format == null) {
-                        plugin.getLogger().severe("Could not find clipboard format for .schem file");
-                        return false;
-                    }
-                    
-                    plugin.getLogger().info("Using format: " + format.getName());
-                    
-                    try (FileOutputStream fos = new FileOutputStream(schematicFile);
-                         ClipboardWriter writer = format.getWriter(fos)) {
+                // Auto-save schematic when regeneration is enabled
+                if (arena.isRegenerationEnabled() && arena.isComplete()) {
+                    MessageUtils.sendRawMessage(player, "&eSaving arena schematic...");
+                    plugin.getArenaCloneManager().saveArenaSchematic(arena).whenComplete((success, throwable) -> {
+                        if (throwable != null) {
+                            plugin.getLogger().severe("Exception during schematic save: " + throwable.getMessage());
+                            throwable.printStackTrace();
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                MessageUtils.sendRawMessage(player, "&cError saving schematic: " + throwable.getMessage());
+                            });
+                            return;
+                        }
                         
-                        writer.write(clipboard);
-                        plugin.getLogger().info("Schematic written to file successfully");
-                    }
-                    
-                    // Verify file was created
-                    if (schematicFile.exists() && schematicFile.length() > 0) {
-                        plugin.getLogger().info("Schematic file verified - Size: " + schematicFile.length() + " bytes");
-                        return true;
-                    } else {
-                        plugin.getLogger().severe("Schematic file was not created or is empty");
-                        return false;
-                    }
+                        if (success) {
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                MessageUtils.sendRawMessage(player, "&aSchematic saved successfully!");
+                            });
+                        } else {
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                MessageUtils.sendRawMessage(player, "&cFailed to save schematic!");
+                            });
+                        }
+                    });
                 }
                 
-            } catch (Exception e) {
-                plugin.getLogger().severe("Failed to save schematic for arena: " + arena.getName());
-                plugin.getLogger().severe("Error details: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-                e.printStackTrace();
-                return false;
-            }
-        });
+                plugin.getArenaManager().saveArena(arena);
+                refresh();
+                break;
+            case 33: // Set Center
+                arena.setCenter(player.getLocation().clone());
+                MessageUtils.sendRawMessage(player, "&aArena center set!");
+                plugin.getArenaManager().saveArena(arena);
+                refresh();
+                break;
+            case 34: // Clone Arena
+                cloneArena();
+                break;
+            case 45: // Save
+                plugin.getArenaManager().saveArena(arena);
+                MessageUtils.sendRawMessage(player, "&aArena saved successfully!");
+                player.closeInventory();
+                break;
+            case 46: // Delete
+                plugin.getArenaManager().removeArena(arena.getName());
+                plugin.getGuiManager().removeArenaEditorGui(player);
+                MessageUtils.sendRawMessage(player, "&cArena deleted successfully!");
+                player.closeInventory();
+                break;
+            case 53: // Back
+                plugin.getGuiManager().removeArenaEditorGui(player);
+                plugin.getGuiManager().openArenaListGUI(player);
+                break;
+        }
     }
     
-    public void cloneArenaSchematic(Arena originalArena, Arena clonedArena, Player player) {
-        File schematicFile = new File(schematicsFolder, originalArena.getName() + ".schem");
-        
-        if (!schematicFile.exists()) {
-            MessageUtils.sendRawMessage(player, "&eCreating schematic for arena...");
-            saveArenaSchematic(originalArena).thenAccept(success -> {
-                if (success) {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        cloneArenaSchematic(originalArena, clonedArena, player);
-                    }, 40L);
-                } else {
-                    MessageUtils.sendRawMessage(player, "&cFailed to create schematic!");
-                }
-            });
+    private void cloneArena() {
+        if (arena.getCenter() == null) {
+            MessageUtils.sendRawMessage(player, "&cYou must set the arena center first!");
             return;
         }
         
-        CompletableFuture.runAsync(() -> {
-            try {
-                plugin.getLogger().info("Starting arena clone for: " + originalArena.getName());
-                
-                com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(clonedArena.getCenter().getWorld());
-                
-                ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
-                if (format == null) {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        MessageUtils.sendRawMessage(player, "&cFailed to load schematic format!");
-                    });
-                    return;
-                }
-                
-                Clipboard clipboard;
-                try (FileInputStream fis = new FileInputStream(schematicFile);
-                     ClipboardReader reader = format.getReader(fis)) {
-                    clipboard = reader.read();
-                    plugin.getLogger().info("Clipboard loaded successfully");
-                }
-                
-                try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    Operation operation = new ClipboardHolder(clipboard)
-                        .createPaste(editSession)
-                        .to(BlockVector3.at(
-                            clonedArena.getCenter().getBlockX(),
-                            clonedArena.getCenter().getBlockY(),
-                            clonedArena.getCenter().getBlockZ()
-                        ))
-                        .build();
-                    
-                    Operations.complete(operation);
-                    plugin.getLogger().info("Arena cloned successfully");
-                    
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        MessageUtils.sendRawMessage(player, "&aArena schematic pasted successfully!");
-                    });
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Failed to clone arena schematic: " + e.getMessage());
-                e.printStackTrace();
-                
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    MessageUtils.sendRawMessage(player, "&cFailed to paste arena schematic! Check console for details.");
-                });
-            }
-        });
-    }
-    
-    public CompletableFuture<Boolean> regenerateArena(Arena arena) {
-        File schematicFile = new File(schematicsFolder, arena.getName() + ".schem");
-        
-        if (!schematicFile.exists()) {
-            plugin.getLogger().warning("No schematic found for arena: " + arena.getName() + ", creating one...");
-            return saveArenaSchematic(arena).thenCompose(success -> {
-                if (success) {
-                    return regenerateArena(arena);
-                } else {
-                    return CompletableFuture.completedFuture(false);
-                }
-            });
+        if (!arena.isComplete()) {
+            MessageUtils.sendRawMessage(player, "&cOriginal arena must be complete before cloning!");
+            return;
         }
         
-        if (arena.getCenter() == null) {
-            plugin.getLogger().warning("No center set for arena: " + arena.getName());
-            return CompletableFuture.completedFuture(false);
+        // Generate unique clone name
+        String baseName = arena.getName() + "_clone";
+        String cloneName = baseName;
+        int counter = 1;
+        while (plugin.getArenaManager().hasArena(cloneName)) {
+            cloneName = baseName + "_" + counter;
+            counter++;
         }
         
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getCenter().getWorld());
-                
-                ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
-                if (format == null) {
-                    plugin.getLogger().warning("Failed to load schematic format for arena: " + arena.getName());
-                    return false;
-                }
-                
-                Clipboard clipboard;
-                try (FileInputStream fis = new FileInputStream(schematicFile);
-                     ClipboardReader reader = format.getReader(fis)) {
-                    clipboard = reader.read();
-                }
-                
-                try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    Operation operation = new ClipboardHolder(clipboard)
-                        .createPaste(editSession)
-                        .to(BlockVector3.at(
-                            arena.getCenter().getBlockX(),
-                            arena.getCenter().getBlockY(),
-                            arena.getCenter().getBlockZ()
-                        ))
-                        .build();
-                    
-                    Operations.complete(operation);
-                    plugin.getLogger().info("Regenerated arena: " + arena.getName());
-                    return true;
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("Failed to regenerate arena: " + arena.getName());
-                plugin.getLogger().severe("Error: " + e.getMessage());
-                e.printStackTrace();
-                return false;
-            }
-        });
+        Location originalCenter = arena.getCenter();
+        Location newCenter = player.getLocation().clone();
+        
+        // Calculate offsets from original center
+        Location pos1Offset = arena.getPosition1().clone().subtract(originalCenter);
+        Location pos2Offset = arena.getPosition2().clone().subtract(originalCenter);
+        Location spawn1Offset = arena.getSpawnPoint1().clone().subtract(originalCenter);
+        Location spawn2Offset = arena.getSpawnPoint2().clone().subtract(originalCenter);
+        
+        // Apply offsets to new center
+        Location newPos1 = newCenter.clone().add(pos1Offset);
+        Location newPos2 = newCenter.clone().add(pos2Offset);
+        Location newSpawn1 = newCenter.clone().add(spawn1Offset);
+        Location newSpawn2 = newCenter.clone().add(spawn2Offset);
+        
+        // Create new arena
+        Arena clonedArena = new Arena(cloneName, newPos1, newPos2, newSpawn1, newSpawn2);
+        clonedArena.setCenter(newCenter);
+        clonedArena.setAllowedKits(new ArrayList<>(arena.getAllowedKits()));
+        clonedArena.setRegenerationEnabled(arena.isRegenerationEnabled());
+        
+        // Save the cloned arena
+        plugin.getArenaManager().addArena(clonedArena);
+        
+        // Handle schematic cloning with FAWE
+        plugin.getArenaCloneManager().cloneArenaSchematic(arena, clonedArena, player);
+        
+        MessageUtils.sendRawMessage(player, "&aArena cloned successfully as &f" + cloneName + "&a!");
+        player.closeInventory();
     }
 }
