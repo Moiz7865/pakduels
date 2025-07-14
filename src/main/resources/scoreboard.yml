@@ -8,7 +8,7 @@ lines:
   - ""
   - "&e&lDuel Info:"
   - "&7Kit: &f{kit}"
-  - "&7Round: &f{round}&7/&f{maxrounds}"
+  - "&7Round: &f{round} &7(First to {maxrounds})"
   - ""
   - "&a&l{player1}: &f{score1}"
   - "&c&l{player2}: &f{score2}"

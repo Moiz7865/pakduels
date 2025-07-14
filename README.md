@@ -6,7 +6,7 @@ Advanced duels plugin for Minecraft 1.21.4 with comprehensive arena management, 
 
 ### Core Duel System
 - **Interactive Duel Requests**: Players receive clickable accept/deny buttons
-- **Multi-round Duels**: Support for 1-10 rounds per duel
+- **First-to-X Duels**: Support for first-to-X format (1-10 rounds)
 - **Kit-based Combat**: Customizable kits with rule enforcement
 - **Real-time Scoreboards**: Live duel statistics and progress tracking
 

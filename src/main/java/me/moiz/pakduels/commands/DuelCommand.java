@@ -107,7 +107,7 @@ public class DuelCommand implements CommandExecutor, TabCompleter {
     
     private void sendDuelRequestMessage(Player target, Player challenger, Kit kit, int rounds) {
         MessageUtils.sendRawMessage(target, "&6" + challenger.getName() + " &ahas challenged you to a duel!");
-        MessageUtils.sendRawMessage(target, "&aKit: &f" + kit.getName() + " &a| Rounds: &f" + rounds);
+        MessageUtils.sendRawMessage(target, "&aKit: &f" + kit.getName() + " &a| First to: &f" + rounds + " &arounds");
         
         // Create clickable accept button
         net.kyori.adventure.text.Component acceptButton = net.kyori.adventure.text.Component.text()

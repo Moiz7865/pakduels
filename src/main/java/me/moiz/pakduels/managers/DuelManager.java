@@ -234,9 +234,15 @@ public class DuelManager {
         MessageUtils.sendRawMessage(duel.getPlayer1(), "&6Round " + duel.getCurrentRound() + " won by &f" + winner.getName() + "&6!");
         MessageUtils.sendRawMessage(duel.getPlayer2(), "&6Round " + duel.getCurrentRound() + " won by &f" + winner.getName() + "&6!");
         
+        // Show current score after round
+        MessageUtils.sendRawMessage(duel.getPlayer1(), "&eScore: &a" + duel.getPlayer1().getName() + " " + duel.getPlayer1Score() + " &7- &c" + duel.getPlayer2Score() + " " + duel.getPlayer2().getName());
+        MessageUtils.sendRawMessage(duel.getPlayer2(), "&eScore: &a" + duel.getPlayer1().getName() + " " + duel.getPlayer1Score() + " &7- &c" + duel.getPlayer2Score() + " " + duel.getPlayer2().getName());
+        
         plugin.getScoreboardManager().updateDuelScoreboard(duel);
         
         if (duel.isFinished()) {
+            MessageUtils.sendRawMessage(duel.getPlayer1(), "&6&l" + winner.getName() + " &a&lwins the duel! &7(First to " + duel.getMaxRounds() + ")");
+            MessageUtils.sendRawMessage(duel.getPlayer2(), "&6&l" + winner.getName() + " &a&lwins the duel! &7(First to " + duel.getMaxRounds() + ")");
             endDuel(duel, duel.getWinner());
         } else {
             // Make players invulnerable during round transition

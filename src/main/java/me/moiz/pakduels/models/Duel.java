@@ -121,16 +121,16 @@ public class Duel {
     }
     
     public Player getWinner() {
-        if (player1Score > maxRounds / 2) {
+        if (player1Score >= maxRounds) {
             return player1;
-        } else if (player2Score > maxRounds / 2) {
+        } else if (player2Score >= maxRounds) {
             return player2;
         }
         return null;
     }
     
     public boolean isFinished() {
-        return getWinner() != null;
+        return player1Score >= maxRounds || player2Score >= maxRounds;
     }
     
     public void savePlayerInventory(Player player) {
