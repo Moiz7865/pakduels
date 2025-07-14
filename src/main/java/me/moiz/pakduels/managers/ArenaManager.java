@@ -45,8 +45,10 @@ public class ArenaManager {
                 Location pos2 = SerializationUtils.deserializeLocation(config.getString("position2"));
                 Location spawn1 = SerializationUtils.deserializeLocation(config.getString("spawn1"));
                 Location spawn2 = SerializationUtils.deserializeLocation(config.getString("spawn2"));
+                Location center = SerializationUtils.deserializeLocation(config.getString("center"));
                 
                 Arena arena = new Arena(arenaName, pos1, pos2, spawn1, spawn2);
+                arena.setCenter(center);
                 arena.setAllowedKits(config.getStringList("allowed-kits"));
                 arena.setRegenerationEnabled(config.getBoolean("regeneration", false));
                 
@@ -70,6 +72,7 @@ public class ArenaManager {
             config.set("position2", SerializationUtils.serializeLocation(arena.getPosition2()));
             config.set("spawn1", SerializationUtils.serializeLocation(arena.getSpawnPoint1()));
             config.set("spawn2", SerializationUtils.serializeLocation(arena.getSpawnPoint2()));
+            config.set("center", SerializationUtils.serializeLocation(arena.getCenter()));
             config.set("allowed-kits", arena.getAllowedKits());
             config.set("regeneration", arena.isRegenerationEnabled());
             

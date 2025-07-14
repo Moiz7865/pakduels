@@ -30,6 +30,20 @@ public class DuelCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         
+        if (args.length == 0) {
+            MessageUtils.sendMessage(player, "&cUsage: /duel <player> <kit> <rounds> OR /duel accept/deny");
+            return true;
+        }
+        
+        // Handle accept/deny
+        if (args[0].equalsIgnoreCase("accept")) {
+            acceptDuel(player);
+            return true;
+        } else if (args[0].equalsIgnoreCase("deny")) {
+            denyDuel(player);
+            return true;
+        }
+        
         if (args.length != 3) {
             MessageUtils.sendMessage(player, "&cUsage: /duel <player> <kit> <rounds>");
             return true;
@@ -83,12 +97,70 @@ public class DuelCommand implements CommandExecutor, TabCompleter {
         DuelRequest request = new DuelRequest(player, target, kit, rounds);
         plugin.getDuelManager().addDuelRequest(request);
         
-        MessageUtils.sendMessage(player, "&aDuel request sent to &f" + target.getName() + "&a!");
-        MessageUtils.sendMessage(target, "&6" + player.getName() + " &ahas challenged you to a duel!");
-        MessageUtils.sendMessage(target, "&aKit: &f" + kit.getName() + " &a| Rounds: &f" + rounds);
-        MessageUtils.sendMessage(target, "&aType &f/duel accept &aor &f/duel deny &ato respond.");
+        MessageUtils.sendRawMessage(player, "&aDuel request sent to &f" + target.getName() + "&a!");
+        
+        // Send interactive message to target
+        sendDuelRequestMessage(target, player, kit, rounds);
         
         return true;
+    }
+    
+    private void sendDuelRequestMessage(Player target, Player challenger, Kit kit, int rounds) {
+        MessageUtils.sendRawMessage(target, "&6" + challenger.getName() + " &ahas challenged you to a duel!");
+        MessageUtils.sendRawMessage(target, "&aKit: &f" + kit.getName() + " &a| First to: &f" + rounds + " &arounds");
+        
+        // Create clickable accept button
+        net.kyori.adventure.text.Component acceptButton = net.kyori.adventure.text.Component.text()
+            .append(net.kyori.adventure.text.Component.text("[", net.kyori.adventure.text.format.NamedTextColor.GRAY))
+            .append(net.kyori.adventure.text.Component.text("ACCEPT", net.kyori.adventure.text.format.NamedTextColor.GREEN)
+                .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
+                .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/duel accept"))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                    net.kyori.adventure.text.Component.text("Click to accept the duel!", net.kyori.adventure.text.format.NamedTextColor.GREEN))))
+            .append(net.kyori.adventure.text.Component.text("]", net.kyori.adventure.text.format.NamedTextColor.GRAY))
+            .append(net.kyori.adventure.text.Component.text("  "))
+            .append(net.kyori.adventure.text.Component.text("[", net.kyori.adventure.text.format.NamedTextColor.GRAY))
+            .append(net.kyori.adventure.text.Component.text("DENY", net.kyori.adventure.text.format.NamedTextColor.RED)
+                .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
+                .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/duel deny"))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                    net.kyori.adventure.text.Component.text("Click to deny the duel!", net.kyori.adventure.text.format.NamedTextColor.RED))))
+            .append(net.kyori.adventure.text.Component.text("]", net.kyori.adventure.text.format.NamedTextColor.GRAY))
+            .build();
+        
+        target.sendMessage(acceptButton);
+    }
+    
+    private void acceptDuel(Player player) {
+        DuelRequest request = plugin.getDuelManager().getLatestDuelRequest(player);
+        if (request == null) {
+            MessageUtils.sendRawMessage(player, "&cYou have no pending duel requests!");
+            return;
+        }
+        
+        if (request.isExpired()) {
+            plugin.getDuelManager().removeDuelRequest(request);
+            MessageUtils.sendRawMessage(player, "&cThat duel request has expired!");
+            return;
+        }
+        
+        MessageUtils.sendRawMessage(player, "&aYou accepted the duel request!");
+        MessageUtils.sendRawMessage(request.getChallenger(), "&a" + player.getName() + " accepted your duel request!");
+        
+        plugin.getDuelManager().startDuel(request);
+    }
+    
+    private void denyDuel(Player player) {
+        DuelRequest request = plugin.getDuelManager().getLatestDuelRequest(player);
+        if (request == null) {
+            MessageUtils.sendRawMessage(player, "&cYou have no pending duel requests!");
+            return;
+        }
+        
+        MessageUtils.sendRawMessage(player, "&cYou denied the duel request!");
+        MessageUtils.sendRawMessage(request.getChallenger(), "&c" + player.getName() + " denied your duel request!");
+        
+        plugin.getDuelManager().removeDuelRequest(request);
     }
     
     @Override
@@ -100,6 +172,10 @@ public class DuelCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
+            // Add accept/deny options
+            completions.add("accept");
+            completions.add("deny");
+            
             // Tab complete online players
             String partial = args[0].toLowerCase();
             return Bukkit.getOnlinePlayers().stream()

@@ -17,7 +17,7 @@ messages:
   
   duel-request-details:
     enabled: true
-    text: "&aKit: &f{kit} &a| Rounds: &f{rounds}"
+    text: "&aKit: &f{kit} &a| First to: &f{rounds} &arounds"
   
   duel-request-response:
     enabled: true
@@ -118,6 +118,18 @@ messages:
   arena-spawn-set:
     enabled: true
     text: "&aSpawn Point {spawn} set!"
+  
+  arena-center-set:
+    enabled: true
+    text: "&aArena center set!"
+  
+  arena-cloned:
+    enabled: true
+    text: "&aArena cloned successfully as &f{name}&a!"
+  
+  arena-regenerated:
+    enabled: true
+    text: "&aArena regenerated successfully!"
   
   # Admin messages
   spawn-set:

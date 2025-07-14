@@ -187,47 +187,48 @@ public class KitEditorGui {
         switch (slot) {
             case 19: // Natural Health Regen
                 kit.setRule("natural-health-regen", !kit.getRule("natural-health-regen"));
-                MessageUtils.sendMessage(player, "&aHealth regeneration " + (kit.getRule("natural-health-regen") ? "enabled" : "disabled") + "!");
+                MessageUtils.sendRawMessage(player, "&aHealth regeneration " + (kit.getRule("natural-health-regen") ? "enabled" : "disabled") + "!");
                 refresh();
                 break;
             case 21: // Block Break
                 kit.setRule("block-break", !kit.getRule("block-break"));
-                MessageUtils.sendMessage(player, "&aBlock breaking " + (kit.getRule("block-break") ? "enabled" : "disabled") + "!");
+                MessageUtils.sendRawMessage(player, "&aBlock breaking " + (kit.getRule("block-break") ? "enabled" : "disabled") + "!");
                 refresh();
                 break;
             case 23: // Block Place
                 kit.setRule("block-place", !kit.getRule("block-place"));
-                MessageUtils.sendMessage(player, "&aBlock placing " + (kit.getRule("block-place") ? "enabled" : "disabled") + "!");
+                MessageUtils.sendRawMessage(player, "&aBlock placing " + (kit.getRule("block-place") ? "enabled" : "disabled") + "!");
                 refresh();
                 break;
             case 25: // Health Indicators
                 kit.setRule("health-indicators", !kit.getRule("health-indicators"));
-                MessageUtils.sendMessage(player, "&aHealth indicators " + (kit.getRule("health-indicators") ? "enabled" : "disabled") + "!");
+                MessageUtils.sendRawMessage(player, "&aHealth indicators " + (kit.getRule("health-indicators") ? "enabled" : "disabled") + "!");
                 refresh();
                 break;
             case 28: // Hunger Loss
                 kit.setRule("hunger-loss", !kit.getRule("hunger-loss"));
-                MessageUtils.sendMessage(player, "&aHunger loss " + (kit.getRule("hunger-loss") ? "enabled" : "disabled") + "!");
+                MessageUtils.sendRawMessage(player, "&aHunger loss " + (kit.getRule("hunger-loss") ? "enabled" : "disabled") + "!");
                 refresh();
                 break;
             case 30: // Item Drop
                 kit.setRule("item-drop", !kit.getRule("item-drop"));
-                MessageUtils.sendMessage(player, "&aItem dropping " + (kit.getRule("item-drop") ? "enabled" : "disabled") + "!");
+                MessageUtils.sendRawMessage(player, "&aItem dropping " + (kit.getRule("item-drop") ? "enabled" : "disabled") + "!");
                 refresh();
                 break;
             case 32: // Item Pickup
                 kit.setRule("item-pickup", !kit.getRule("item-pickup"));
-                MessageUtils.sendMessage(player, "&aItem pickup " + (kit.getRule("item-pickup") ? "enabled" : "disabled") + "!");
+                MessageUtils.sendRawMessage(player, "&aItem pickup " + (kit.getRule("item-pickup") ? "enabled" : "disabled") + "!");
                 refresh();
                 break;
             case 45: // Save
                 plugin.getKitManager().saveKit(kit);
-                MessageUtils.sendMessage(player, "&aKit saved successfully!");
+                MessageUtils.sendRawMessage(player, "&aKit saved successfully!");
+                player.closeInventory();
                 break;
             case 46: // Delete
                 plugin.getKitManager().removeKit(kit.getName());
                 plugin.getGuiManager().removeKitEditorGui(player);
-                MessageUtils.sendMessage(player, "&cKit deleted successfully!");
+                MessageUtils.sendRawMessage(player, "&cKit deleted successfully!");
                 player.closeInventory();
                 break;
             case 53: // Back

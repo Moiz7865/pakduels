@@ -21,6 +21,10 @@ public class MessageUtils {
             String prefix = plugin.getConfigManager().getMessageText("prefix");
             Component component = LegacyComponentSerializer.legacyAmpersand().deserialize(prefix + message);
             sender.sendMessage(component);
+        } else if (plugin != null) {
+            // Fallback for missing messages
+            Component component = LegacyComponentSerializer.legacyAmpersand().deserialize("&c" + messageKey);
+            sender.sendMessage(component);
         }
     }
     
@@ -30,6 +34,10 @@ public class MessageUtils {
             message = message.replace("{" + placeholder + "}", value);
             String prefix = plugin.getConfigManager().getMessageText("prefix");
             Component component = LegacyComponentSerializer.legacyAmpersand().deserialize(prefix + message);
+            sender.sendMessage(component);
+        } else if (plugin != null) {
+            // Fallback for missing messages
+            Component component = LegacyComponentSerializer.legacyAmpersand().deserialize("&c" + messageKey);
             sender.sendMessage(component);
         }
     }

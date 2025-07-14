@@ -127,14 +127,6 @@ public class ArenaEditorGui {
             Location spawn2 = arena.getSpawnPoint2();
             spawn2Lore.add("§7Coordinates:");
             spawn2Lore.add("§fX: " + spawn2.getBlockX());
-            spawn2Lore.add("§fY: " + spawn2Loc.getBlockY());
-            spawn2Lore.add("§fZ: " + spawn2Loc.getBlockZ());
-            spawn2Lore.add("§fYaw: " + String.format("%.1f", spawn2Loc.getYaw()));
-            spawn2Lore.add("§fPitch: " + String.format("%.1f", spawn2Loc.getPitch()));
-        }
-        spawn2Lore.add("");
-        spawn2Lore.add("§e§lClick to set!");
-        spawn2Meta.setLore(spawn2Lore);
         spawn2.setItemMeta(spawn2Meta);
         inventory.setItem(25, spawn2);
         
@@ -167,20 +159,12 @@ public class ArenaEditorGui {
         ItemStack setCenter = new ItemStack(arena.getCenter() != null ? Material.LIME_DYE : Material.RED_DYE);
         ItemMeta setCenterMeta = setCenter.getItemMeta();
         setCenterMeta.setDisplayName("§e§lSet Center");
-        List<String> centerLore = new ArrayList<>(Arrays.asList(
+        setCenterMeta.setLore(Arrays.asList(
             "§7Set the center point for cloning",
-            "§7Status: " + (arena.getCenter() != null ? "§aSet" : "§cNot set")
+            "§7Status: " + (arena.getCenter() != null ? "§aSet" : "§cNot set"),
+            "",
+            "§e§lClick to set!"
         ));
-        if (arena.getCenter() != null) {
-            Location centerLoc = arena.getCenter();
-            centerLore.add("§7Coordinates:");
-            centerLore.add("§fX: " + centerLoc.getBlockX());
-            centerLore.add("§fY: " + centerLoc.getBlockY());
-            centerLore.add("§fZ: " + centerLoc.getBlockZ());
-        }
-        centerLore.add("");
-        centerLore.add("§e§lClick to set!");
-        setCenterMeta.setLore(centerLore);
         setCenter.setItemMeta(setCenterMeta);
         inventory.setItem(33, setCenter);
         

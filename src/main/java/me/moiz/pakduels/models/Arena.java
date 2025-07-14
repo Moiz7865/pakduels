@@ -12,6 +12,7 @@ public class Arena {
     private Location position2;
     private Location spawnPoint1;
     private Location spawnPoint2;
+    private Location center;
     private List<String> allowedKits;
     private boolean regenerationEnabled;
     private boolean reserved;
@@ -68,6 +69,14 @@ public class Arena {
     
     public void setSpawnPoint2(Location spawnPoint2) {
         this.spawnPoint2 = spawnPoint2;
+    }
+    
+    public Location getCenter() {
+        return center;
+    }
+    
+    public void setCenter(Location center) {
+        this.center = center;
     }
     
     public List<String> getAllowedKits() {

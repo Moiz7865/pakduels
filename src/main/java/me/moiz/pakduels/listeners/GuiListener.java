@@ -4,6 +4,7 @@ import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.guis.ArenaEditorGui;
 import me.moiz.pakduels.guis.ArenaListGui;
 import me.moiz.pakduels.guis.KitEditorGui;
+import me.moiz.pakduels.guis.KitSelectorGui;
 import me.moiz.pakduels.models.Arena;
 import me.moiz.pakduels.utils.MessageUtils;
 import org.bukkit.entity.Player;
@@ -45,6 +46,12 @@ public class GuiListener implements Listener {
             if (gui != null) {
                 gui.handleClick(event.getSlot());
             }
+        } else if (title.startsWith("Kit Selector: ")) {
+            event.setCancelled(true);
+            KitSelectorGui gui = plugin.getGuiManager().getKitSelectorGui(player);
+            if (gui != null) {
+                gui.handleClick(event.getSlot());
+            }
         }
     }
     
@@ -78,27 +85,32 @@ public class GuiListener implements Listener {
         ArenaEditorGui gui = plugin.getGuiManager().getArenaEditorGui(player);
         
         if (gui != null && gui.getEditMode() != ArenaEditorGui.EditMode.NONE) {
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            // Check for shift + left click in air or on block
+            if (player.isSneaking() && (event.getAction() == Action.LEFT_CLICK_AIR || 
+                event.getAction() == Action.LEFT_CLICK_BLOCK || 
+                event.getAction() == Action.RIGHT_CLICK_AIR || 
+                event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
                 event.setCancelled(true);
                 
                 Arena arena = gui.getArena();
+                org.bukkit.Location playerLoc = player.getLocation();
                 
                 switch (gui.getEditMode()) {
                     case POSITION_1:
-                        arena.setPosition1(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 1 set!");
+                        arena.setPosition1(playerLoc.clone());
+                        MessageUtils.sendRawMessage(player, "&aArena Position 1 set!");
                         break;
                     case POSITION_2:
-                        arena.setPosition2(event.getClickedBlock().getLocation());
-                        MessageUtils.sendMessage(player, "&aArena Position 2 set!");
+                        arena.setPosition2(playerLoc.clone());
+                        MessageUtils.sendRawMessage(player, "&aArena Position 2 set!");
                         break;
                     case SPAWN_1:
-                        arena.setSpawnPoint1(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 1 set!");
+                        arena.setSpawnPoint1(playerLoc.clone());
+                        MessageUtils.sendRawMessage(player, "&aSpawn Point 1 set!");
                         break;
                     case SPAWN_2:
-                        arena.setSpawnPoint2(event.getClickedBlock().getLocation().add(0.5, 1, 0.5));
-                        MessageUtils.sendMessage(player, "&aSpawn Point 2 set!");
+                        arena.setSpawnPoint2(playerLoc.clone());
+                        MessageUtils.sendRawMessage(player, "&aSpawn Point 2 set!");
                         break;
                 }
                 

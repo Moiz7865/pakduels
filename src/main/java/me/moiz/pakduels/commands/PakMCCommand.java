@@ -25,7 +25,7 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            MessageUtils.sendMessage(sender, "&cThis command can only be used by players!");
+            MessageUtils.sendRawMessage(sender, "&cThis command can only be used by players!");
             return true;
         }
         
@@ -37,7 +37,7 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
         switch (args[0].toLowerCase()) {
             case "create":
                 if (args.length != 2) {
-                    MessageUtils.sendMessage(player, "&cUsage: /pakmc create <kitname>");
+                    MessageUtils.sendRawMessage(player, "&cUsage: /pakmc create <kitname>");
                     return true;
                 }
                 createKit(player, args[1]);
@@ -45,7 +45,7 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
                 
             case "setspawn":
                 if (!player.hasPermission("pakmc.admin")) {
-                    MessageUtils.sendMessage(player, "&cYou don't have permission to use this command!");
+                    MessageUtils.sendRawMessage(player, "&cYou don't have permission to use this command!");
                     return true;
                 }
                 setSpawn(player);
@@ -53,16 +53,16 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
                 
             case "reload":
                 if (!player.hasPermission("pakmc.admin")) {
-                    MessageUtils.sendMessage(player, "no-permission");
+                    MessageUtils.sendRawMessage(player, "&cYou don't have permission to use this command!");
                     return true;
                 }
                 reloadConfigs();
-                MessageUtils.sendMessage(player, "configs-reloaded");
+                MessageUtils.sendRawMessage(player, "&aAll configurations reloaded!");
                 break;
                 
             case "arena":
                 if (args.length < 2) {
-                    MessageUtils.sendMessage(player, "&cUsage: /pakmc arena <create|editor> [name]");
+                    MessageUtils.sendRawMessage(player, "&cUsage: /pakmc arena <create|editor> [name]");
                     return true;
                 }
                 handleArenaCommand(player, args);
@@ -70,7 +70,7 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
                 
             case "kit":
                 if (args.length < 2) {
-                    MessageUtils.sendMessage(player, "&cUsage: /pakmc kit <editor> <kitname>");
+                    MessageUtils.sendRawMessage(player, "&cUsage: /pakmc kit <editor> <kitname>");
                     return true;
                 }
                 handleKitCommand(player, args);
@@ -86,12 +86,12 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
     
     private void createKit(Player player, String kitName) {
         if (!player.hasPermission("pakmc.kit.create")) {
-            MessageUtils.sendMessage(player, "&cYou don't have permission to create kits!");
+            MessageUtils.sendRawMessage(player, "&cYou don't have permission to create kits!");
             return;
         }
         
         if (plugin.getKitManager().hasKit(kitName)) {
-            MessageUtils.sendMessage(player, "&cA kit with that name already exists!");
+            MessageUtils.sendRawMessage(player, "&cA kit with that name already exists!");
             return;
         }
         
@@ -101,14 +101,14 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
                 player.getInventory().getItemInOffHand().clone());
         
         plugin.getKitManager().addKit(kit);
-        MessageUtils.sendMessage(player, "&aKit &f" + kitName + " &acreated successfully!");
+        MessageUtils.sendRawMessage(player, "&aKit &f" + kitName + " &acreated successfully!");
     }
     
     private void handleArenaCommand(Player player, String[] args) {
         switch (args[1].toLowerCase()) {
             case "create":
                 if (args.length != 3) {
-                    MessageUtils.sendMessage(player, "&cUsage: /pakmc arena create <name>");
+                    MessageUtils.sendRawMessage(player, "&cUsage: /pakmc arena create <name>");
                     return;
                 }
                 createArena(player, args[2]);
@@ -116,14 +116,14 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
                 
             case "editor":
                 if (!player.hasPermission("pakmc.arena.edit")) {
-                    MessageUtils.sendMessage(player, "&cYou don't have permission to edit arenas!");
+                    MessageUtils.sendRawMessage(player, "&cYou don't have permission to edit arenas!");
                     return;
                 }
                 plugin.getGuiManager().openArenaListGUI(player);
                 break;
                 
             default:
-                MessageUtils.sendMessage(player, "&cUsage: /pakmc arena <create|editor> [name]");
+                MessageUtils.sendRawMessage(player, "&cUsage: /pakmc arena <create|editor> [name]");
                 break;
         }
     }
@@ -132,44 +132,44 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
         switch (args[1].toLowerCase()) {
             case "editor":
                 if (args.length != 3) {
-                    MessageUtils.sendMessage(player, "&cUsage: /pakmc kit editor <kitname>");
+                    MessageUtils.sendRawMessage(player, "&cUsage: /pakmc kit editor <kitname>");
                     return;
                 }
                 openKitEditor(player, args[2]);
                 break;
                 
             default:
-                MessageUtils.sendMessage(player, "&cUsage: /pakmc kit <editor> <kitname>");
+                MessageUtils.sendRawMessage(player, "&cUsage: /pakmc kit <editor> <kitname>");
                 break;
         }
     }
     
     private void createArena(Player player, String arenaName) {
         if (!player.hasPermission("pakmc.arena.create")) {
-            MessageUtils.sendMessage(player, "&cYou don't have permission to create arenas!");
+            MessageUtils.sendRawMessage(player, "&cYou don't have permission to create arenas!");
             return;
         }
         
         if (plugin.getArenaManager().hasArena(arenaName)) {
-            MessageUtils.sendMessage(player, "&cAn arena with that name already exists!");
+            MessageUtils.sendRawMessage(player, "&cAn arena with that name already exists!");
             return;
         }
         
         Arena arena = new Arena(arenaName);
         plugin.getArenaManager().addArena(arena);
-        MessageUtils.sendMessage(player, "&aArena &f" + arenaName + " &acreated successfully!");
-        MessageUtils.sendMessage(player, "&eUse &f/pakmc arena editor &eto configure it.");
+        MessageUtils.sendRawMessage(player, "&aArena &f" + arenaName + " &acreated successfully!");
+        MessageUtils.sendRawMessage(player, "&eUse &f/pakmc arena editor &eto configure it.");
     }
     
     private void openKitEditor(Player player, String kitName) {
         if (!player.hasPermission("pakmc.kit.create")) {
-            MessageUtils.sendMessage(player, "&cYou don't have permission to edit kits!");
+            MessageUtils.sendRawMessage(player, "&cYou don't have permission to edit kits!");
             return;
         }
         
         Kit kit = plugin.getKitManager().getKit(kitName);
         if (kit == null) {
-            MessageUtils.sendMessage(player, "&cKit not found!");
+            MessageUtils.sendRawMessage(player, "&cKit not found!");
             return;
         }
         
@@ -185,7 +185,7 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
             player.getLocation().getYaw(),
             player.getLocation().getPitch()
         );
-        MessageUtils.sendMessage(player, "&aSpawn location set successfully!");
+        MessageUtils.sendRawMessage(player, "&aSpawn location set successfully!");
     }
     
     private void reloadConfigs() {
@@ -195,13 +195,13 @@ public class PakMCCommand implements CommandExecutor, TabCompleter {
     }
     
     private void sendHelp(Player player) {
-        MessageUtils.sendMessage(player, "&6&l=== PakDuels Commands ===");
-        MessageUtils.sendMessage(player, "&e/pakmc create <kitname> &7- Create a kit from your inventory");
-        MessageUtils.sendMessage(player, "&e/pakmc arena create <name> &7- Create a new arena");
-        MessageUtils.sendMessage(player, "&e/pakmc arena editor &7- Open arena management GUI");
-        MessageUtils.sendMessage(player, "&e/pakmc kit editor <kitname> &7- Edit kit rules");
-        MessageUtils.sendMessage(player, "&e/pakmc setspawn &7- Set lobby spawn location");
-        MessageUtils.sendMessage(player, "&e/pakmc reload &7- Reload configuration");
+        MessageUtils.sendRawMessage(player, "&6&l=== PakDuels Commands ===");
+        MessageUtils.sendRawMessage(player, "&e/pakmc create <kitname> &7- Create a kit from your inventory");
+        MessageUtils.sendRawMessage(player, "&e/pakmc arena create <name> &7- Create a new arena");
+        MessageUtils.sendRawMessage(player, "&e/pakmc arena editor &7- Open arena management GUI");
+        MessageUtils.sendRawMessage(player, "&e/pakmc kit editor <kitname> &7- Edit kit rules");
+        MessageUtils.sendRawMessage(player, "&e/pakmc setspawn &7- Set lobby spawn location");
+        MessageUtils.sendRawMessage(player, "&e/pakmc reload &7- Reload configuration");
     }
     
     @Override

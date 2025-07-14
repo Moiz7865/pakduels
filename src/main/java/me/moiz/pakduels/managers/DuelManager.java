@@ -55,6 +55,13 @@ public class DuelManager {
                 .orElse(null);
     }
     
+    public DuelRequest getLatestDuelRequest(Player challenged) {
+        return duelRequests.values().stream()
+                .filter(request -> request.getChallenged().equals(challenged))
+                .max((r1, r2) -> Long.compare(r1.getCreatedAt(), r2.getCreatedAt()))
+                .orElse(null);
+    }
+    
     public void removeDuelRequest(DuelRequest request) {
         duelRequests.remove(request.getId());
     }
@@ -75,8 +82,8 @@ public class DuelManager {
         // Find available arena
         Arena arena = plugin.getArenaManager().getAvailableArena(kit.getName());
         if (arena == null) {
-            MessageUtils.sendMessage(player1, "arena-not-found");
-            MessageUtils.sendMessage(player2, "arena-not-found");
+            MessageUtils.sendRawMessage(player1, "&cNo available arena found for this kit!");
+            MessageUtils.sendRawMessage(player2, "&cNo available arena found for this kit!");
             removeDuelRequest(request);
             return;
         }
@@ -129,14 +136,19 @@ public class DuelManager {
         // Start inventory countdown
         startInventoryCountdown(duel);
         
-        MessageUtils.sendMessage(player1, "duel-started", "player", player2.getName());
-        MessageUtils.sendMessage(player2, "duel-started", "player", player1.getName());
+        MessageUtils.sendRawMessage(player1, "&aDuel started against &f" + player2.getName() + "&a!");
+        MessageUtils.sendRawMessage(player2, "&aDuel started against &f" + player1.getName() + "&a!");
     }
     
     private void startInventoryCountdown(Duel duel) {
         duel.setState(Duel.DuelState.INVENTORY_COUNTDOWN);
         
         int countdownTime = plugin.getConfigManager().getInventoryCountdownTime();
+        
+        // Regenerate arena at start of duel
+        if (duel.getArena().isRegenerationEnabled()) {
+            plugin.getArenaCloneManager().regenerateArena(duel.getArena());
+        }
         
         new BukkitRunnable() {
             int timeLeft = countdownTime;
@@ -154,9 +166,9 @@ public class DuelManager {
                     return;
                 }
                 
-                if (timeLeft <= 5) {
+                if (timeLeft <= 10) {
                     Component title = Component.text(String.valueOf(timeLeft), NamedTextColor.RED);
-                    Component subtitle = Component.text(plugin.getConfigManager().getMessageText("countdown-organize"), NamedTextColor.GRAY);
+                    Component subtitle = Component.text("Organize your inventory", NamedTextColor.GRAY);
                     
                     Title titleObj = Title.title(title, subtitle);
                     duel.getPlayer1().showTitle(titleObj);
@@ -183,7 +195,7 @@ public class DuelManager {
                 if (countdown <= 0) {
                     duel.setState(Duel.DuelState.IN_PROGRESS);
                     
-                    Component goTitle = Component.text(plugin.getConfigManager().getMessageText("countdown-go"), NamedTextColor.GREEN);
+                    Component goTitle = Component.text("GO!", NamedTextColor.GREEN);
                     Title titleObj = Title.title(goTitle, Component.empty());
                     duel.getPlayer1().showTitle(titleObj);
                     duel.getPlayer2().showTitle(titleObj);
@@ -219,15 +231,18 @@ public class DuelManager {
         duel.setState(Duel.DuelState.ROUND_ENDING);
         duel.incrementScore(winner);
         
-        String message = plugin.getConfigManager().getMessageText("round-won")
-                .replace("{round}", String.valueOf(duel.getCurrentRound()))
-                .replace("{winner}", winner.getName());
-        MessageUtils.sendRawMessage(duel.getPlayer1(), message);
-        MessageUtils.sendRawMessage(duel.getPlayer2(), message);
+        MessageUtils.sendRawMessage(duel.getPlayer1(), "&6Round " + duel.getCurrentRound() + " won by &f" + winner.getName() + "&6!");
+        MessageUtils.sendRawMessage(duel.getPlayer2(), "&6Round " + duel.getCurrentRound() + " won by &f" + winner.getName() + "&6!");
+        
+        // Show current score after round
+        MessageUtils.sendRawMessage(duel.getPlayer1(), "&eScore: &a" + duel.getPlayer1().getName() + " " + duel.getPlayer1Score() + " &7- &c" + duel.getPlayer2Score() + " " + duel.getPlayer2().getName());
+        MessageUtils.sendRawMessage(duel.getPlayer2(), "&eScore: &a" + duel.getPlayer1().getName() + " " + duel.getPlayer1Score() + " &7- &c" + duel.getPlayer2Score() + " " + duel.getPlayer2().getName());
         
         plugin.getScoreboardManager().updateDuelScoreboard(duel);
         
         if (duel.isFinished()) {
+            MessageUtils.sendRawMessage(duel.getPlayer1(), "&6&l" + winner.getName() + " &a&lwins the duel! &7(First to " + duel.getMaxRounds() + ")");
+            MessageUtils.sendRawMessage(duel.getPlayer2(), "&6&l" + winner.getName() + " &a&lwins the duel! &7(First to " + duel.getMaxRounds() + ")");
             endDuel(duel, duel.getWinner());
         } else {
             // Make players invulnerable during round transition
@@ -262,9 +277,9 @@ public class DuelManager {
         duel.getPlayer1().teleport(duel.getArena().getSpawnPoint1());
         duel.getPlayer2().teleport(duel.getArena().getSpawnPoint2());
         
-        // Regenerate arena if enabled
+        // Regenerate arena for next round
         if (duel.getArena().isRegenerationEnabled()) {
-            // TODO: Implement FAWE regeneration
+            plugin.getArenaCloneManager().regenerateArena(duel.getArena());
         }
         
         // Start countdown
@@ -279,11 +294,16 @@ public class DuelManager {
         
         // Announce winner
         if (winner != null) {
-            MessageUtils.sendMessage(player1, "duel-ended", "winner", winner.getName());
-            MessageUtils.sendMessage(player2, "duel-ended", "winner", winner.getName());
+            MessageUtils.sendRawMessage(player1, "&6&l" + winner.getName() + " &a&lwins the duel!");
+            MessageUtils.sendRawMessage(player2, "&6&l" + winner.getName() + " &a&lwins the duel!");
         } else {
-            MessageUtils.sendMessage(player1, "duel-draw");
-            MessageUtils.sendMessage(player2, "duel-draw");
+            MessageUtils.sendRawMessage(player1, "&6&lDuel ended in a draw!");
+            MessageUtils.sendRawMessage(player2, "&6&lDuel ended in a draw!");
+        }
+        
+        // Final arena regeneration
+        if (duel.getArena().isRegenerationEnabled()) {
+            plugin.getArenaCloneManager().regenerateArena(duel.getArena());
         }
         
         // Cleanup
