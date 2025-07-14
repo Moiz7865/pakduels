@@ -2,7 +2,6 @@ package me.moiz.pakduels.managers;
 
 import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.models.Duel;
-import me.moiz.pakduels.utils.MessageUtils;
 import fr.mrmicky.fastboard.FastBoard;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -18,11 +17,13 @@ public class ScoreboardManager {
     private final PakDuelsPlugin plugin;
     private final Map<Player, FastBoard> playerBoards;
     private final MiniMessage miniMessage;
+    private final LegacyComponentSerializer legacySerializer;
     
     public ScoreboardManager(PakDuelsPlugin plugin) {
         this.plugin = plugin;
         this.playerBoards = new HashMap<>();
         this.miniMessage = MiniMessage.miniMessage();
+        this.legacySerializer = LegacyComponentSerializer.legacyAmpersand();
     }
     
     public void setupDuelScoreboard(Duel duel) {
@@ -33,11 +34,11 @@ public class ScoreboardManager {
         FastBoard board1 = new FastBoard(player1);
         FastBoard board2 = new FastBoard(player2);
         
-        // Set title with hex color support
+        // Set title - convert Component to String for FastBoard
         String titleText = plugin.getConfigManager().getScoreboardTitle();
-        Component titleComponent = parseColoredText(titleText);
-        board1.updateTitle(titleComponent);
-        board2.updateTitle(titleComponent);
+        String titleString = componentToString(parseColoredText(titleText));
+        board1.updateTitle(titleString);
+        board2.updateTitle(titleString);
         
         // Store boards
         playerBoards.put(player1, board1);
@@ -59,10 +60,11 @@ public class ScoreboardManager {
         // Get scoreboard lines from config
         List<String> lines = plugin.getConfigManager().getScoreboardLines();
         
-        // Replace placeholders and convert to components
-        List<Component> processedLines = lines.stream()
+        // Replace placeholders, parse colors, and convert to strings
+        List<String> processedLines = lines.stream()
                 .map(line -> replacePlaceholders(line, duel))
                 .map(this::parseColoredText)
+                .map(this::componentToString)
                 .collect(Collectors.toList());
         
         // Update boards
@@ -136,11 +138,18 @@ public class ScoreboardManager {
             }
             
             // Fall back to legacy color codes
-            return LegacyComponentSerializer.legacyAmpersand().deserialize(text);
+            return legacySerializer.deserialize(text);
         } catch (Exception e) {
             // If parsing fails, fall back to legacy
-            return LegacyComponentSerializer.legacyAmpersand().deserialize(text);
+            return legacySerializer.deserialize(text);
         }
+    }
+    
+    /**
+     * Convert Component to String for FastBoard compatibility
+     */
+    private String componentToString(Component component) {
+        return legacySerializer.serialize(component);
     }
     
     public void cleanup() {
