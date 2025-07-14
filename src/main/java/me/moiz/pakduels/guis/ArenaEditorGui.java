@@ -68,6 +68,14 @@ public class ArenaEditorGui {
         pos1Lore.add("");
         pos1Lore.add("§e§lClick to set!");
         pos1Meta.setLore(pos1Lore);
+            pos1Lore.add("§7Coordinates:");
+            pos1Lore.add("§fX: " + pos1.getBlockX());
+            pos1Lore.add("§fY: " + pos1.getBlockY());
+            pos1Lore.add("§fZ: " + pos1.getBlockZ());
+        }
+        pos1Lore.add("");
+        pos1Lore.add("§e§lClick to set!");
+        pos1Meta.setLore(pos1Lore);
         pos1.setItemMeta(pos1Meta);
         inventory.setItem(19, pos1);
         
@@ -81,6 +89,14 @@ public class ArenaEditorGui {
         ));
         if (arena.getPosition2() != null) {
             Location pos2 = arena.getPosition2();
+            pos2Lore.add("§7Coordinates:");
+            pos2Lore.add("§fX: " + pos2.getBlockX());
+            pos2Lore.add("§fY: " + pos2.getBlockY());
+            pos2Lore.add("§fZ: " + pos2.getBlockZ());
+        }
+        pos2Lore.add("");
+        pos2Lore.add("§e§lClick to set!");
+        pos2Meta.setLore(pos2Lore);
             pos2Lore.add("§7Coordinates:");
             pos2Lore.add("§fX: " + pos2.getBlockX());
             pos2Lore.add("§fY: " + pos2.getBlockY());
@@ -112,6 +128,16 @@ public class ArenaEditorGui {
         spawn1Lore.add("");
         spawn1Lore.add("§e§lClick to set!");
         spawn1Meta.setLore(spawn1Lore);
+            spawn1Lore.add("§7Coordinates:");
+            spawn1Lore.add("§fX: " + spawn1.getBlockX());
+            spawn1Lore.add("§fY: " + spawn1.getBlockY());
+            spawn1Lore.add("§fZ: " + spawn1.getBlockZ());
+            spawn1Lore.add("§fYaw: " + String.format("%.1f", spawn1.getYaw()));
+            spawn1Lore.add("§fPitch: " + String.format("%.1f", spawn1.getPitch()));
+        }
+        spawn1Lore.add("");
+        spawn1Lore.add("§e§lClick to set!");
+        spawn1Meta.setLore(spawn1Lore);
         spawn1.setItemMeta(spawn1Meta);
         inventory.setItem(23, spawn1);
         
@@ -125,6 +151,8 @@ public class ArenaEditorGui {
         ));
         if (arena.getSpawnPoint2() != null) {
             Location spawn2 = arena.getSpawnPoint2();
+            spawn2Lore.add("§7Coordinates:");
+            spawn2Lore.add("§fX: " + spawn2.getBlockX());
             spawn2Lore.add("§7Coordinates:");
             spawn2Lore.add("§fX: " + spawn2.getBlockX());
             spawn2Lore.add("§fY: " + spawn2Loc.getBlockY());
