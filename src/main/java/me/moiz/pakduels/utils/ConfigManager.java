@@ -57,6 +57,10 @@ public class ConfigManager {
         return config.getInt("duel.round-delay", 2);
     }
     
+    public int getSpawnTeleportDelay() {
+        return config.getInt("duel.spawn-teleport-delay", 2);
+    }
+    
     // Spawn settings
     public boolean hasSpawnSet() {
         return config.contains("spawn.world");

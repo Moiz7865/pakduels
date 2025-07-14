@@ -54,8 +54,14 @@ public class DuelListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Duel duel = plugin.getDuelManager().getDuel(event.getPlayer());
         if (duel != null) {
-            // Player quit during duel - opponent wins
-            plugin.getDuelManager().endDuel(duel, duel.getOpponent(event.getPlayer()));
+            Player quitter = event.getPlayer();
+            Player opponent = duel.getOpponent(quitter);
+            
+            // Announce that opponent wins due to quit
+            MessageUtils.sendRawMessage(opponent, "&6&l" + opponent.getName() + " &a&lwins the duel! &7(" + quitter.getName() + " left the game)");
+            
+            // End duel with opponent as winner
+            plugin.getDuelManager().endDuel(duel, opponent);
         }
     }
     

@@ -8,6 +8,9 @@ duel:
   # Delay between rounds in seconds
   round-delay: 2
   
+  # Delay before teleporting to spawn after duel ends (in seconds)
+  spawn-teleport-delay: 2
+  
   # Arena regeneration settings
   regeneration:
     # Use FAWE for arena regeneration

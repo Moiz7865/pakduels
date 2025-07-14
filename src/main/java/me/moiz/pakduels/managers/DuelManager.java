@@ -329,9 +329,15 @@ public class DuelManager {
         restorePlayerState(player1);
         restorePlayerState(player2);
         
-        // Teleport to spawn
-        teleportToSpawn(player1);
-        teleportToSpawn(player2);
+        // Teleport to spawn with delay
+        int teleportDelay = plugin.getConfigManager().getSpawnTeleportDelay();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                teleportToSpawn(player1);
+                teleportToSpawn(player2);
+            }
+        }.runTaskLater(plugin, teleportDelay * 20L);
     }
     
     private void restorePlayerState(Player player) {
