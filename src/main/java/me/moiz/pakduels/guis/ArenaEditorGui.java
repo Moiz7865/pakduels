@@ -126,7 +126,7 @@ public class ArenaEditorGui {
         if (arena.getSpawnPoint2() != null) {
             Location spawn2Loc = arena.getSpawnPoint2();
             spawn2Lore.add("§7Coordinates:");
-            spawn2Lore.add("§fX: " + spawn2.getBlockX());
+            spawn2Lore.add("§fX: " + spawn2Loc.getBlockX());
             spawn2Lore.add("§fY: " + spawn2Loc.getBlockY());
             spawn2Lore.add("§fZ: " + spawn2Loc.getBlockZ());
             spawn2Lore.add("§fYaw: " + String.format("%.1f", spawn2Loc.getYaw()));
