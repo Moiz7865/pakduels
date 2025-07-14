@@ -140,7 +140,11 @@ public class ArenaCloneManager {
                 
                 // Paste schematic
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    Operation operation = clipboard.createPaste(editSession, to, false);
+                    Operation operation = clipboard
+                        .createPaste(editSession)
+                        .to(to)
+                        .ignoreAirBlocks(false)
+                        .build();
                     
                     Operations.complete(operation);
                     
@@ -189,7 +193,11 @@ public class ArenaCloneManager {
                 
                 // Paste schematic
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    Operation operation = clipboard.createPaste(editSession, to, false);
+                    Operation operation = clipboard
+                        .createPaste(editSession)
+                        .to(to)
+                        .ignoreAirBlocks(false)
+                        .build();
                     
                     Operations.complete(operation);
                     plugin.getLogger().info("Arena regenerated successfully: " + arena.getName());
