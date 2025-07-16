@@ -74,6 +74,9 @@ public class PakDuelsPlugin extends JavaPlugin {
         if (guiManager != null) {
             guiManager.cleanup();
         }
+        if (healthDisplayManager != null) {
+            healthDisplayManager.cleanup();
+        }
         
         getLogger().info("PakDuels has been disabled successfully!");
     }

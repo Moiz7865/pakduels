@@ -178,9 +178,15 @@ public class ArenaCloneManager {
                 // Paste schematic
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
                     ClipboardHolder holder = new ClipboardHolder(clipboard);
+                    
+                    // Calculate the offset from clipboard origin to center
+                    BlockVector3 clipboardOrigin = clipboard.getOrigin();
+                    BlockVector3 clipboardCenter = clipboard.getRegion().getCenter().toBlockPoint();
+                    BlockVector3 offset = to.subtract(clipboardCenter);
+                    
                     Operation operation = holder
                         .createPaste(editSession)
-                        .to(to)
+                        .to(clipboardOrigin.add(offset))
                         .ignoreAirBlocks(false)
                         .build();
                     
@@ -247,9 +253,15 @@ public class ArenaCloneManager {
                 // Paste schematic
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
                     ClipboardHolder holder = new ClipboardHolder(clipboard);
+                    
+                    // Calculate the offset from clipboard origin to center
+                    BlockVector3 clipboardOrigin = clipboard.getOrigin();
+                    BlockVector3 clipboardCenter = clipboard.getRegion().getCenter().toBlockPoint();
+                    BlockVector3 offset = to.subtract(clipboardCenter);
+                    
                     Operation operation = holder
                         .createPaste(editSession)
-                        .to(to)
+                        .to(clipboardOrigin.add(offset))
                         .ignoreAirBlocks(false)
                         .build();
                     

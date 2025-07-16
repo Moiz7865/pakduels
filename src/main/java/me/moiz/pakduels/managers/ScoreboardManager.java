@@ -149,7 +149,15 @@ public class ScoreboardManager {
      * Convert Component to String for FastBoard compatibility
      */
     private String componentToString(Component component) {
-        return legacySerializer.serialize(component);
+        // Convert to legacy format and ensure it's white by default
+        String result = legacySerializer.serialize(component);
+        
+        // If no color codes are present, make it white
+        if (!result.contains("§") && !result.contains("&")) {
+            result = "§7" + result; // Gray/white color
+        }
+        
+        return result;
     }
     
     public void cleanup() {
