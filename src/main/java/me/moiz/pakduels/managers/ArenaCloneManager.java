@@ -1,12 +1,12 @@
 package me.moiz.pakduels.managers;
 
-import com.fastasyncworldedit.core.FaweAPI;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardWriter;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
@@ -14,6 +14,7 @@ import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.world.World;
 import me.moiz.pakduels.PakDuelsPlugin;
 import me.moiz.pakduels.models.Arena;
@@ -25,7 +26,6 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 public class ArenaCloneManager {
@@ -87,9 +87,26 @@ public class ArenaCloneManager {
                     Operations.complete(forwardExtentCopy);
                     plugin.getLogger().info("Copy operation completed successfully");
                     
-                    // Save to file using SPONGE_SCHEMATIC format
+                    // Get the correct format for .schem files
+                    ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
+                    if (format == null) {
+                        // Fallback to SPONGE_SCHEMATIC format
+                        format = ClipboardFormats.findByAlias("schem");
+                        if (format == null) {
+                            format = ClipboardFormats.findByAlias("sponge");
+                        }
+                    }
+                    
+                    if (format == null) {
+                        plugin.getLogger().severe("Could not find schematic format for .schem files!");
+                        return false;
+                    }
+                    
+                    plugin.getLogger().info("Using clipboard format: " + format.getName());
+                    
+                    // Save to file
                     try (FileOutputStream fos = new FileOutputStream(schematicFile);
-                         ClipboardWriter writer = BuiltInClipboardFormat.SPONGE_SCHEMATIC.getWriter(fos)) {
+                         ClipboardWriter writer = format.getWriter(fos)) {
                         
                         writer.write(clipboard);
                         plugin.getLogger().info("Schematic saved successfully to: " + schematicFile.getName());
@@ -122,12 +139,30 @@ public class ArenaCloneManager {
                     }
                 }
                 
+                // Get the correct format for reading
+                ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
+                if (format == null) {
+                    format = ClipboardFormats.findByAlias("schem");
+                    if (format == null) {
+                        format = ClipboardFormats.findByAlias("sponge");
+                    }
+                }
+                
+                if (format == null) {
+                    plugin.getLogger().severe("Could not find clipboard format for reading .schem file!");
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        MessageUtils.sendRawMessage(player, "&cCould not find clipboard format for .schem file!");
+                    });
+                    return;
+                }
+                
                 // Load schematic
                 Clipboard clipboard;
                 try (FileInputStream fis = new FileInputStream(schematicFile);
-                     ClipboardReader reader = BuiltInClipboardFormat.SPONGE_SCHEMATIC.getReader(fis)) {
+                     ClipboardReader reader = format.getReader(fis)) {
                     
                     clipboard = reader.read();
+                    plugin.getLogger().info("Schematic loaded successfully");
                 }
                 
                 // Get target world and location
@@ -138,10 +173,11 @@ public class ArenaCloneManager {
                     clonedArena.getCenter().getBlockZ()
                 );
                 
+                plugin.getLogger().info("Pasting schematic to: " + to);
+                
                 // Paste schematic
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    // Use ClipboardHolder for proper pasting
-                    com.sk89q.worldedit.session.ClipboardHolder holder = new com.sk89q.worldedit.session.ClipboardHolder(clipboard);
+                    ClipboardHolder holder = new ClipboardHolder(clipboard);
                     Operation operation = holder
                         .createPaste(editSession)
                         .to(to)
@@ -149,6 +185,7 @@ public class ArenaCloneManager {
                         .build();
                     
                     Operations.complete(operation);
+                    plugin.getLogger().info("Schematic pasted successfully");
                     
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         MessageUtils.sendRawMessage(player, "&aSchematic pasted successfully!");
@@ -159,7 +196,7 @@ public class ArenaCloneManager {
                 plugin.getLogger().severe("Failed to clone arena schematic: " + e.getMessage());
                 e.printStackTrace();
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    MessageUtils.sendRawMessage(player, "&cFailed to clone arena schematic!");
+                    MessageUtils.sendRawMessage(player, "&cFailed to clone arena schematic: " + e.getMessage());
                 });
             }
         });
@@ -177,10 +214,24 @@ public class ArenaCloneManager {
                     return;
                 }
                 
+                // Get the correct format for reading
+                ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
+                if (format == null) {
+                    format = ClipboardFormats.findByAlias("schem");
+                    if (format == null) {
+                        format = ClipboardFormats.findByAlias("sponge");
+                    }
+                }
+                
+                if (format == null) {
+                    plugin.getLogger().severe("Could not find clipboard format for reading .schem file during regeneration!");
+                    return;
+                }
+                
                 // Load schematic
                 Clipboard clipboard;
                 try (FileInputStream fis = new FileInputStream(schematicFile);
-                     ClipboardReader reader = BuiltInClipboardFormat.SPONGE_SCHEMATIC.getReader(fis)) {
+                     ClipboardReader reader = format.getReader(fis)) {
                     
                     clipboard = reader.read();
                 }
@@ -195,8 +246,7 @@ public class ArenaCloneManager {
                 
                 // Paste schematic
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
-                    // Use ClipboardHolder for proper pasting
-                    com.sk89q.worldedit.session.ClipboardHolder holder = new com.sk89q.worldedit.session.ClipboardHolder(clipboard);
+                    ClipboardHolder holder = new ClipboardHolder(clipboard);
                     Operation operation = holder
                         .createPaste(editSession)
                         .to(to)
